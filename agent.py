@@ -152,6 +152,30 @@ def get_beehiiv_stats():
 
 # ── CONTENT GENERATION ───────────────────────────────────────────────────────
 
+def extract_json(text):
+    # Pull a JSON object out of model output that may be wrapped in markdown
+    # fences (```json ... ```), have leading/trailing prose, or both.
+    # Raises json.JSONDecodeError on failure with the offending text included
+    # via the original exception (caller logs it).
+    text = text.strip()
+    if text.startswith("```"):
+        first_newline = text.find("\n")
+        text = text[first_newline + 1:] if first_newline != -1 else text[3:]
+        text = text.rstrip()
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
+    if not (text.startswith("{") or text.startswith("[")):
+        first_brace = text.find("{")
+        first_bracket = text.find("[")
+        candidates = [i for i in (first_brace, first_bracket) if i != -1]
+        if candidates:
+            start = min(candidates)
+            end = max(text.rfind("}"), text.rfind("]"))
+            if end > start:
+                text = text[start:end + 1]
+    return json.loads(text, strict=False)
+
 def generate_content(week_number, format_key, state):
     posts_made = state.get("posts_made", [])
     previous_titles = [p.get("title", p.get("subject", "")) for p in posts_made[-20:]]
@@ -178,7 +202,13 @@ def generate_content(week_number, format_key, state):
         "You are a senior software engineer writing for a technical audience. "
         "Write posts that are genuinely useful — concrete, specific, actionable. "
         "Never sound like marketing. Mention the product naturally at the end only. "
-        "Vary topic and angle. Output ONLY valid JSON, no markdown fences."
+        "Vary topic and angle. "
+        "CRITICAL OUTPUT FORMAT: Respond with a single raw JSON object and "
+        "nothing else. The very first character must be `{` and the very last "
+        "character must be `}`. Do NOT wrap the JSON in markdown code fences "
+        "(no ```json, no ```). Do NOT include any prose, preamble, or "
+        "explanation before or after the JSON. Inside string values, escape "
+        "newlines as \\n."
     )
 
     prompts = {
@@ -234,11 +264,16 @@ Return JSON: {{"title": "...", "body_markdown": "..."}}"""
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=1500,
+        max_tokens=2000,
         system=system,
         messages=[{"role": "user", "content": prompts[format_key]}]
     )
-    out = json.loads(response.content[0].text.strip())
+    raw_text = response.content[0].text
+    try:
+        out = extract_json(raw_text)
+    except json.JSONDecodeError as e:
+        preview = raw_text[:500].replace("\n", "\\n")
+        raise ValueError(f"Model returned non-JSON ({e}). First 500 chars: {preview!r}") from e
     out["_angle"] = angle
     return out
 
