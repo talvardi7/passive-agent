@@ -233,7 +233,7 @@ Return JSON: {{"title": "...", "body_markdown": "..."}}"""
     }
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=1500,
         system=system,
         messages=[{"role": "user", "content": prompts[format_key]}]
@@ -587,10 +587,17 @@ def daily_job():
     is_publish_day = weekday in PUBLISH_DAYS
 
     # One-time Thursday make-up for the Wednesday missed during initial deploy.
-    # State flag fires this exactly once, then leaves the Mon/Wed/Fri schedule untouched.
-    if weekday == 3 and not state.get("thursday_makeup_fired"):
+    # Triggers only on 2026-05-07 specifically, and only if no DEV.to post for
+    # today is already in posts_made — so retries are safe (failed attempts
+    # leave no record, so the next run still tries) and every other Thursday
+    # is untouched.
+    THURSDAY_MAKEUP_DATE = "2026-05-07"
+    already_posted_today = any(
+        p.get("date") == str(today) and p.get("platform") == "devto"
+        for p in state.get("posts_made", [])
+    )
+    if weekday == 3 and today.isoformat() == THURSDAY_MAKEUP_DATE and not already_posted_today:
         is_publish_day = True
-        state["thursday_makeup_fired"] = True
 
     is_monday = weekday == 0
     results = {}
