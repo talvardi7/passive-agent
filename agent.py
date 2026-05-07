@@ -8,7 +8,7 @@ Every Monday at 09:00 UTC:
 Zero involvement required.
 """
 
-import os, sys, re, json, time, datetime, smtplib, requests, schedule
+import os, sys, re, html, json, time, datetime, smtplib, requests, schedule
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from anthropic import Anthropic
@@ -46,6 +46,9 @@ DEVTO_TAGS_ROTATION = [
     ["devops", "ai", "engineering", "tools"],
 ]
 
+ANGLES = ["tutorial", "opinion", "case_study", "tip_list", "story"]
+PUBLISH_DAYS = {0: "monday", 2: "wednesday", 4: "friday"}
+
 # ── STATE ────────────────────────────────────────────────────────────────────
 
 def load_state():
@@ -57,6 +60,15 @@ def load_state():
 def save_state(state):
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
+
+def pick_angle(recent_angles):
+    forbidden = set(recent_angles[-2:])
+    start = len(recent_angles) % len(ANGLES)
+    for i in range(len(ANGLES)):
+        candidate = ANGLES[(start + i) % len(ANGLES)]
+        if candidate not in forbidden:
+            return candidate
+    return ANGLES[0]
 
 # ── STATS COLLECTION ─────────────────────────────────────────────────────────
 
@@ -140,43 +152,95 @@ def get_beehiiv_stats():
 
 # ── CONTENT GENERATION ───────────────────────────────────────────────────────
 
-def generate_content(week_number, platform, previous_posts):
-    previous_titles = [p.get("title", p.get("subject", "")) for p in previous_posts[-10:]]
-    tags = DEVTO_TAGS_ROTATION[week_number % len(DEVTO_TAGS_ROTATION)]
+def generate_content(week_number, format_key, state):
+    posts_made = state.get("posts_made", [])
+    previous_titles = [p.get("title", p.get("subject", "")) for p in posts_made[-20:]]
+    recent_angles = state.get("recent_angles", [])
+    angle = pick_angle(recent_angles)
+
+    tags = DEVTO_TAGS_ROTATION[len(posts_made) % len(DEVTO_TAGS_ROTATION)]
+
+    weekly_titles = [
+        p.get("title", "") for p in posts_made
+        if p.get("week") == week_number and p.get("platform") == "devto"
+    ]
+
+    angle_hints = {
+        "tutorial":   "step-by-step walkthrough with copy-paste blocks",
+        "opinion":    "stake out a clear take, defend it with reasoning",
+        "case_study": "tell a specific real example with numbers/outcomes",
+        "tip_list":   "numbered list, each item self-contained and concrete",
+        "story":      "narrative arc — situation, problem, what you tried, what worked",
+    }
+    angle_hint = angle_hints[angle]
 
     system = (
         "You are a senior software engineer writing for a technical audience. "
         "Write posts that are genuinely useful — concrete, specific, actionable. "
         "Never sound like marketing. Mention the product naturally at the end only. "
-        "Vary the topic and angle every week. Output ONLY valid JSON, no markdown fences."
+        "Vary topic and angle. Output ONLY valid JSON, no markdown fences."
     )
 
     prompts = {
-        "devto": f"""Week {week_number}. Write a DEV.to article for software engineers about using AI to work faster.
+        "devto_long": f"""Week {week_number} — Monday long-form DEV.to article on using AI for engineering productivity.
+Angle: {angle} ({angle_hint}).
 Product to mention at end: {GUMROAD_PRODUCT_URL}
 Tags: {tags}
-Previous titles to avoid: {previous_titles}
+Do NOT repeat or rephrase any of these previous titles: {previous_titles}
 Rules: title specific and useful (e.g. "The 5 AI prompts I use before every code review"),
 body 500-800 words markdown, include 1-2 concrete copy-paste prompt examples,
 end with one soft sentence mentioning "a prompt playbook I put together" with the link,
 tone: practitioner to peers.
 Return JSON: {{"title": "...", "body_markdown": "...", "tags": {json.dumps(tags)}}}""",
 
-        "newsletter": f"""Week {week_number}. Write a newsletter issue for engineers interested in AI productivity.
+        "devto_medium": f"""Week {week_number} — Wednesday mid-length DEV.to piece. Different topic and angle from Monday.
+Angle: {angle} ({angle_hint}).
+Product: {GUMROAD_PRODUCT_URL}
+Tags: {tags}
+Do NOT repeat or rephrase any of these recent titles: {previous_titles}
+Rules: title sharp and specific, body 300-500 words markdown, one concrete prompt or workflow example,
+soft mention of the playbook link at the end. Tone: peer-to-peer, no fluff.
+Return JSON: {{"title": "...", "body_markdown": "...", "tags": {json.dumps(tags)}}}""",
+
+        "devto_roundup": f"""Week {week_number} — Friday weekly roundup DEV.to post.
+This week you've already published these articles: {weekly_titles or '[none yet]'}
+Angle: {angle} ({angle_hint}).
+Product: {GUMROAD_PRODUCT_URL}
+Tags: {tags}
+Avoid these recent titles: {previous_titles}
+Rules: title like "What I learned about AI workflows this week" or "3 things that worked, 1 that didn't",
+body 250-400 words markdown that ties together the week's themes (reference your own articles by topic, not by linking),
+soft playbook mention at the end. Casual reflective tone.
+Return JSON: {{"title": "...", "body_markdown": "...", "tags": {json.dumps(tags)}}}""",
+
+        "newsletter": f"""Week {week_number}. Newsletter issue for engineers interested in AI productivity.
+Angle: {angle} ({angle_hint}).
 Product link: {GUMROAD_PRODUCT_URL}
-Previous subjects to avoid: {previous_titles}
+Avoid these recent subjects: {previous_titles}
 Rules: subject specific and under 50 chars, 400-600 words HTML,
 one concrete framework, 2-3 copy-paste prompt examples, soft product mention at end.
-Return JSON: {{"subject": "...", "body_html": "..."}}"""
+Return JSON: {{"subject": "...", "body_html": "..."}}""",
+
+        "ih_draft": f"""Week {week_number} — Indie Hackers post draft (the user will paste this manually).
+Voice: builder talking to other builders. First-person, conversational, specific numbers, no hype.
+Angle: {angle} ({angle_hint}).
+Product: {GUMROAD_PRODUCT_URL}
+Avoid these recent titles: {previous_titles}
+Rules: title under 70 chars (something like "Week N: what I shipped + what I'm learning"),
+body 200-400 words markdown about something concrete you built/tried/learned this week,
+end with a soft one-line mention of the playbook link only.
+Return JSON: {{"title": "...", "body_markdown": "..."}}"""
     }
 
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
-        max_tokens=1200,
+        max_tokens=1500,
         system=system,
-        messages=[{"role": "user", "content": prompts[platform]}]
+        messages=[{"role": "user", "content": prompts[format_key]}]
     )
-    return json.loads(response.content[0].text.strip())
+    out = json.loads(response.content[0].text.strip())
+    out["_angle"] = angle
+    return out
 
 # ── POSTING ──────────────────────────────────────────────────────────────────
 
@@ -250,8 +314,12 @@ def post_to_hackernews(title, url):
 
 # ── EMAIL REPORT ─────────────────────────────────────────────────────────────
 
-def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, articles=None, newsletter_posts=None, is_monday=False):
+def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, articles=None, newsletter_posts=None, weekday=None):
     today = datetime.date.today()
+    if weekday is None:
+        weekday = today.weekday()
+    is_monday = weekday == 0
+    is_publish_day = weekday in PUBLISH_DAYS
     week = state["week_number"]
     new_sales = gumroad["sales_count"] - sales_baseline
     new_revenue = new_sales * 19
@@ -313,14 +381,15 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
       <a href="https://app.beehiiv.com" style="font-size:12px;color:#378ADD;text-decoration:none;display:block;margin-top:12px">Open Beehiiv dashboard ↗</a>
     </div>"""
 
-    # Published today section (only on Mondays)
+    # Published today section — shown on any publish day (Mon/Wed/Fri)
     published_today_html = ""
-    if is_monday and results:
+    if is_publish_day and results:
         items = ""
         if results.get("devto"):
             r = results["devto"]
+            label = {"devto_long": "DEV.to (long-form)", "devto_medium": "DEV.to (mid-length)", "devto_roundup": "DEV.to (weekly roundup)"}.get(r.get("format", ""), "DEV.to")
             link = f'<a href="{r["url"]}" style="color:#378ADD;text-decoration:none">View article ↗</a>' if r.get("url") else ""
-            items += f'<div class="action-row"><span>{r["status"]}</span><span>DEV.to: <b>{r["title"]}</b> {link}</span></div>'
+            items += f'<div class="action-row"><span>{r["status"]}</span><span>{label}: <b>{r["title"]}</b> {link}</span></div>'
         if results.get("hn"):
             r = results["hn"]
             link = f'<a href="{r["url"]}" style="color:#378ADD;text-decoration:none">View on HN ↗</a>' if r.get("url") else ""
@@ -328,16 +397,33 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
         if results.get("newsletter"):
             r = results["newsletter"]
             items += f'<div class="action-row"><span>{r["status"]}</span><span>Newsletter: <b>{r["subject"]}</b></span></div>'
-        published_today_html = f"""
+        if items:
+            published_today_html = f"""
     <div class="card" style="border-left:3px solid #1D9E75">
       <p class="section-title">Published today</p>
       {items}
     </div>"""
 
-    day_label = f"Monday — Week {week}" if is_monday else str(today)
-    subject_prefix = f"🟢 New content published · " if is_monday else ""
+    # Indie Hackers draft (Mondays only — paste-ready for the user)
+    ih_draft_html = ""
+    if is_monday and results.get("ih_draft") and results["ih_draft"].get("body"):
+        d = results["ih_draft"]
+        body_escaped = html.escape(d["body"])
+        title_escaped = html.escape(d["title"])
+        ih_draft_html = f"""
+    <div class="card" style="border-left:3px solid #EF9F27">
+      <p class="section-title">Indie Hackers draft (paste manually — 30 sec)</p>
+      <p style="font-size:14px;font-weight:500;margin:0 0 12px;color:#0F1117">{title_escaped}</p>
+      <pre style="background:#F4F6FA;padding:14px;border-radius:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;color:#0F1117;margin:0">{body_escaped}</pre>
+      <a href="https://www.indiehackers.com/post" style="font-size:12px;color:#378ADD;text-decoration:none;display:block;margin-top:12px">Open Indie Hackers ↗</a>
+    </div>"""
 
-    html = f"""<!DOCTYPE html>
+    day_name = {0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday", 4: "Friday", 5: "Saturday", 6: "Sunday"}[weekday]
+    day_label = f"{day_name} — Week {week}" if is_publish_day else str(today)
+    published_anything = bool(published_today_html)
+    subject_prefix = "🟢 New content published · " if published_anything else ""
+
+    email_html = f"""<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><style>
   body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F4F6FA; margin: 0; padding: 24px; }}
@@ -364,6 +450,7 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
   </div>
 
   {published_today_html}
+  {ih_draft_html}
 
   <div class="card">
     <p class="section-title">Today's numbers</p>
@@ -434,7 +521,7 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
     msg["Subject"] = f"{subject_prefix}${total_rev:.0f} total · {gumroad['sales_count']} sales · {devto['total_views']:,} views — {today}"
     msg["From"] = f"Passive Agent <{SMTP_EMAIL}>"
     msg["To"] = REPORT_EMAIL
-    msg.attach(MIMEText(html, "html"))
+    msg.attach(MIMEText(email_html, "html"))
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(SMTP_EMAIL, SMTP_PASSWORD)
@@ -495,7 +582,9 @@ def get_beehiiv_posts():
 def daily_job():
     state = load_state()
     today = datetime.date.today()
-    is_monday = today.weekday() == 0
+    weekday = today.weekday()
+    is_publish_day = weekday in PUBLISH_DAYS
+    is_monday = weekday == 0
     results = {}
 
     print(f"\n[{datetime.datetime.now()}] ── Daily job ({today}) ──")
@@ -512,22 +601,26 @@ def daily_job():
     print(f"  DEV.to:  {devto_stats['total_views']} views | {devto_stats['followers']} followers")
     print(f"  Beehiiv: {beehiiv_stats['subscribers']} subs | {beehiiv_stats['open_rate']}% open rate")
 
-    # 2. On Mondays — publish new content
-    if is_monday:
-        state["week_number"] += 1
+    # 2. Publish new content on Mon/Wed/Fri
+    if is_publish_day:
+        if is_monday:
+            state["week_number"] += 1
         week = state["week_number"]
-        print(f"  Monday — publishing new content (week {week})")
+        devto_format = {0: "devto_long", 2: "devto_medium", 4: "devto_roundup"}[weekday]
+        print(f"  {PUBLISH_DAYS[weekday].title()} — publishing {devto_format} (week {week})")
 
         if HAS_DEVTO:
             try:
-                c = generate_content(week, "devto", state["posts_made"])
+                c = generate_content(week, devto_format, state)
+                angle = c.pop("_angle", "")
                 resp = post_to_devto(c)
                 url = resp.get("url", "")
-                results["devto"] = {"status": "✅", "title": c["title"], "url": url}
-                state["posts_made"].append({"platform": "devto", "title": c["title"], "url": url, "week": week, "date": str(today)})
-                print(f"  DEV.to: ✅ \"{c['title']}\"")
+                results["devto"] = {"status": "✅", "title": c["title"], "url": url, "format": devto_format}
+                state["posts_made"].append({"platform": "devto", "format": devto_format, "angle": angle, "title": c["title"], "url": url, "week": week, "date": str(today)})
+                state.setdefault("recent_angles", []).append(angle)
+                print(f"  DEV.to: ✅ \"{c['title']}\" [{angle}]")
             except Exception as e:
-                results["devto"] = {"status": "❌", "title": str(e), "url": ""}
+                results["devto"] = {"status": "❌", "title": str(e), "url": "", "format": devto_format}
                 print(f"  DEV.to: ❌ {e}")
 
         time.sleep(3)
@@ -544,16 +637,30 @@ def daily_job():
 
             time.sleep(3)
 
-        if HAS_NEWSLETTER:
+        if is_monday and HAS_NEWSLETTER:
             try:
-                c = generate_content(week, "newsletter", state["posts_made"])
+                c = generate_content(week, "newsletter", state)
+                angle = c.pop("_angle", "")
                 post_newsletter(c)
                 results["newsletter"] = {"status": "✅", "subject": c["subject"]}
-                state["posts_made"].append({"platform": "newsletter", "subject": c["subject"], "week": week, "date": str(today)})
-                print(f"  Newsletter: ✅ \"{c['subject']}\"")
+                state["posts_made"].append({"platform": "newsletter", "angle": angle, "subject": c["subject"], "week": week, "date": str(today)})
+                state.setdefault("recent_angles", []).append(angle)
+                print(f"  Newsletter: ✅ \"{c['subject']}\" [{angle}]")
             except Exception as e:
                 results["newsletter"] = {"status": "❌", "subject": str(e)}
                 print(f"  Newsletter: ❌ {e}")
+
+        if is_monday:
+            try:
+                c = generate_content(week, "ih_draft", state)
+                angle = c.pop("_angle", "")
+                results["ih_draft"] = {"status": "📝", "title": c["title"], "body": c["body_markdown"], "angle": angle}
+                state.setdefault("ih_drafts", []).append({"title": c["title"], "angle": angle, "week": week, "date": str(today)})
+                state.setdefault("recent_angles", []).append(angle)
+                print(f"  Indie Hackers draft: 📝 \"{c['title']}\" [{angle}]")
+            except Exception as e:
+                results["ih_draft"] = {"status": "❌", "title": str(e), "body": ""}
+                print(f"  Indie Hackers draft: ❌ {e}")
 
     # 3. Track daily stats
     sales_baseline = state.get("total_sales_baseline", 0)
@@ -571,7 +678,7 @@ def daily_job():
     if HAS_EMAIL:
         try:
             send_report(state, gumroad, devto_stats, beehiiv_stats,
-                        sales_baseline, results, articles, newsletter_posts, is_monday)
+                        sales_baseline, results, articles, newsletter_posts, weekday)
         except Exception as e:
             print(f"  Email: ❌ {e}")
 
@@ -586,7 +693,7 @@ if __name__ == "__main__":
     print(f"   Newsletter: {'✅' if HAS_NEWSLETTER else '⏭️ '}")
     print(f"   Email:      {'✅' if HAS_EMAIL else '⏭️ '}")
     print(f"   Reporting:  {REPORT_EMAIL}")
-    print(f"   Schedule:   daily 09:00 UTC · posts on Mondays\n")
+    print(f"   Schedule:   daily 09:00 UTC · posts Mon/Wed/Fri (newsletter+IH draft on Mon)\n")
 
     daily_job()
 
