@@ -381,9 +381,10 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
       <a href="https://app.beehiiv.com" style="font-size:12px;color:#378ADD;text-decoration:none;display:block;margin-top:12px">Open Beehiiv dashboard ↗</a>
     </div>"""
 
-    # Published today section — shown on any publish day (Mon/Wed/Fri)
+    # Published today section — render whenever results contain a published item.
+    # (Decoupled from is_publish_day so the Thursday make-up post still surfaces.)
     published_today_html = ""
-    if is_publish_day and results:
+    if results:
         items = ""
         if results.get("devto"):
             r = results["devto"]
@@ -419,8 +420,8 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
     </div>"""
 
     day_name = {0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday", 4: "Friday", 5: "Saturday", 6: "Sunday"}[weekday]
-    day_label = f"{day_name} — Week {week}" if is_publish_day else str(today)
     published_anything = bool(published_today_html)
+    day_label = f"{day_name} — Week {week}" if published_anything else str(today)
     subject_prefix = "🟢 New content published · " if published_anything else ""
 
     email_html = f"""<!DOCTYPE html>
@@ -584,6 +585,13 @@ def daily_job():
     today = datetime.date.today()
     weekday = today.weekday()
     is_publish_day = weekday in PUBLISH_DAYS
+
+    # One-time Thursday make-up for the Wednesday missed during initial deploy.
+    # State flag fires this exactly once, then leaves the Mon/Wed/Fri schedule untouched.
+    if weekday == 3 and not state.get("thursday_makeup_fired"):
+        is_publish_day = True
+        state["thursday_makeup_fired"] = True
+
     is_monday = weekday == 0
     results = {}
 
@@ -606,8 +614,9 @@ def daily_job():
         if is_monday:
             state["week_number"] += 1
         week = state["week_number"]
-        devto_format = {0: "devto_long", 2: "devto_medium", 4: "devto_roundup"}[weekday]
-        print(f"  {PUBLISH_DAYS[weekday].title()} — publishing {devto_format} (week {week})")
+        devto_format = {0: "devto_long", 2: "devto_medium", 3: "devto_medium", 4: "devto_roundup"}[weekday]
+        day_name_log = PUBLISH_DAYS.get(weekday, "thursday")
+        print(f"  {day_name_log.title()} — publishing {devto_format} (week {week})")
 
         if HAS_DEVTO:
             try:
