@@ -152,29 +152,57 @@ def get_beehiiv_stats():
 
 # ── CONTENT GENERATION ───────────────────────────────────────────────────────
 
-def extract_json(text):
-    # Pull a JSON object out of model output that may be wrapped in markdown
-    # fences (```json ... ```), have leading/trailing prose, or both.
-    # Raises json.JSONDecodeError on failure with the offending text included
-    # via the original exception (caller logs it).
-    text = text.strip()
-    if text.startswith("```"):
-        first_newline = text.find("\n")
-        text = text[first_newline + 1:] if first_newline != -1 else text[3:]
-        text = text.rstrip()
-        if text.endswith("```"):
-            text = text[:-3]
-        text = text.strip()
-    if not (text.startswith("{") or text.startswith("[")):
-        first_brace = text.find("{")
-        first_bracket = text.find("[")
-        candidates = [i for i in (first_brace, first_bracket) if i != -1]
-        if candidates:
-            start = min(candidates)
-            end = max(text.rfind("}"), text.rfind("]"))
-            if end > start:
-                text = text[start:end + 1]
-    return json.loads(text, strict=False)
+# Tool schemas — using the Anthropic tool-use API forces the model to return
+# structured input instead of free-form text. The SDK delivers it as a parsed
+# dict, sidestepping every JSON-string-parsing failure mode (markdown fences,
+# unescaped quotes inside markdown, embedded newlines, etc).
+DEVTO_TOOL = {
+    "name": "submit_devto_article",
+    "description": "Submit the generated DEV.to article",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string", "description": "Article title"},
+            "body_markdown": {"type": "string", "description": "Full article body in markdown"},
+            "tags": {"type": "array", "items": {"type": "string"}, "description": "DEV.to tags"},
+        },
+        "required": ["title", "body_markdown", "tags"],
+    },
+}
+
+NEWSLETTER_TOOL = {
+    "name": "submit_newsletter",
+    "description": "Submit the generated newsletter issue",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "subject": {"type": "string", "description": "Subject line under 50 chars"},
+            "body_html": {"type": "string", "description": "Newsletter body in HTML"},
+        },
+        "required": ["subject", "body_html"],
+    },
+}
+
+IH_TOOL = {
+    "name": "submit_ih_draft",
+    "description": "Submit the generated Indie Hackers post draft",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string", "description": "Post title under 70 chars"},
+            "body_markdown": {"type": "string", "description": "Post body in markdown"},
+        },
+        "required": ["title", "body_markdown"],
+    },
+}
+
+TOOL_FOR_FORMAT = {
+    "devto_long":    DEVTO_TOOL,
+    "devto_medium":  DEVTO_TOOL,
+    "devto_roundup": DEVTO_TOOL,
+    "newsletter":    NEWSLETTER_TOOL,
+    "ih_draft":      IH_TOOL,
+}
 
 def generate_content(week_number, format_key, state):
     posts_made = state.get("posts_made", [])
@@ -202,46 +230,40 @@ def generate_content(week_number, format_key, state):
         "You are a senior software engineer writing for a technical audience. "
         "Write posts that are genuinely useful — concrete, specific, actionable. "
         "Never sound like marketing. Mention the product naturally at the end only. "
-        "Vary topic and angle. "
-        "CRITICAL OUTPUT FORMAT: Respond with a single raw JSON object and "
-        "nothing else. The very first character must be `{` and the very last "
-        "character must be `}`. Do NOT wrap the JSON in markdown code fences "
-        "(no ```json, no ```). Do NOT include any prose, preamble, or "
-        "explanation before or after the JSON. Inside string values, escape "
-        "newlines as \\n."
+        "Vary topic and angle. Use the provided tool to return your output."
     )
 
     prompts = {
         "devto_long": f"""Week {week_number} — Monday long-form DEV.to article on using AI for engineering productivity.
 Angle: {angle} ({angle_hint}).
 Product to mention at end: {GUMROAD_PRODUCT_URL}
-Tags: {tags}
+Use these DEV.to tags: {tags}
 Do NOT repeat or rephrase any of these previous titles: {previous_titles}
 Rules: title specific and useful (e.g. "The 5 AI prompts I use before every code review"),
 body 500-800 words markdown, include 1-2 concrete copy-paste prompt examples,
 end with one soft sentence mentioning "a prompt playbook I put together" with the link,
 tone: practitioner to peers.
-Return JSON: {{"title": "...", "body_markdown": "...", "tags": {json.dumps(tags)}}}""",
+Call submit_devto_article with the result.""",
 
         "devto_medium": f"""Week {week_number} — Wednesday mid-length DEV.to piece. Different topic and angle from Monday.
 Angle: {angle} ({angle_hint}).
 Product: {GUMROAD_PRODUCT_URL}
-Tags: {tags}
+Use these DEV.to tags: {tags}
 Do NOT repeat or rephrase any of these recent titles: {previous_titles}
 Rules: title sharp and specific, body 300-500 words markdown, one concrete prompt or workflow example,
 soft mention of the playbook link at the end. Tone: peer-to-peer, no fluff.
-Return JSON: {{"title": "...", "body_markdown": "...", "tags": {json.dumps(tags)}}}""",
+Call submit_devto_article with the result.""",
 
         "devto_roundup": f"""Week {week_number} — Friday weekly roundup DEV.to post.
 This week you've already published these articles: {weekly_titles or '[none yet]'}
 Angle: {angle} ({angle_hint}).
 Product: {GUMROAD_PRODUCT_URL}
-Tags: {tags}
+Use these DEV.to tags: {tags}
 Avoid these recent titles: {previous_titles}
 Rules: title like "What I learned about AI workflows this week" or "3 things that worked, 1 that didn't",
 body 250-400 words markdown that ties together the week's themes (reference your own articles by topic, not by linking),
 soft playbook mention at the end. Casual reflective tone.
-Return JSON: {{"title": "...", "body_markdown": "...", "tags": {json.dumps(tags)}}}""",
+Call submit_devto_article with the result.""",
 
         "newsletter": f"""Week {week_number}. Newsletter issue for engineers interested in AI productivity.
 Angle: {angle} ({angle_hint}).
@@ -249,7 +271,7 @@ Product link: {GUMROAD_PRODUCT_URL}
 Avoid these recent subjects: {previous_titles}
 Rules: subject specific and under 50 chars, 400-600 words HTML,
 one concrete framework, 2-3 copy-paste prompt examples, soft product mention at end.
-Return JSON: {{"subject": "...", "body_html": "..."}}""",
+Call submit_newsletter with the result.""",
 
         "ih_draft": f"""Week {week_number} — Indie Hackers post draft (the user will paste this manually).
 Voice: builder talking to other builders. First-person, conversational, specific numbers, no hype.
@@ -259,21 +281,38 @@ Avoid these recent titles: {previous_titles}
 Rules: title under 70 chars (something like "Week N: what I shipped + what I'm learning"),
 body 200-400 words markdown about something concrete you built/tried/learned this week,
 end with a soft one-line mention of the playbook link only.
-Return JSON: {{"title": "...", "body_markdown": "..."}}"""
+Call submit_ih_draft with the result."""
     }
 
+    tool = TOOL_FOR_FORMAT[format_key]
     response = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=2000,
         system=system,
-        messages=[{"role": "user", "content": prompts[format_key]}]
+        messages=[{"role": "user", "content": prompts[format_key]}],
+        tools=[tool],
+        tool_choice={"type": "tool", "name": tool["name"]},
     )
-    raw_text = response.content[0].text
-    try:
-        out = extract_json(raw_text)
-    except json.JSONDecodeError as e:
-        preview = raw_text[:500].replace("\n", "\\n")
-        raise ValueError(f"Model returned non-JSON ({e}). First 500 chars: {preview!r}") from e
+
+    out = None
+    for block in response.content:
+        if getattr(block, "type", None) == "tool_use":
+            out = dict(block.input)
+            break
+    if out is None:
+        # tool_choice forces a tool call, so this should never happen, but if
+        # it ever does, surface what came back so we can debug fast.
+        raise ValueError(f"Model didn't call the tool. stop_reason={response.stop_reason}, content={response.content!r}"[:500])
+
+    # Clean up tags for DEV.to: max 4 tags, lowercase, alphanum-only (DEV.to limit)
+    if "tags" in out:
+        cleaned = []
+        for t in out["tags"]:
+            t = re.sub(r"[^a-z0-9]", "", str(t).lower())
+            if t and t not in cleaned:
+                cleaned.append(t)
+        out["tags"] = cleaned[:4] or list(tags)
+
     out["_angle"] = angle
     return out
 
