@@ -1,4 +1,25 @@
 {
   "_comment": "Add product ideas to 'items'. Each item is processed exactly once (tracked via state.etsy_processed). Required fields: id, niche, product. Optional: min_price, max_price, n_listings (default 10), n_image_prompts (default 15), image_style. See etsy_agent/README.md for examples.",
-  "items": []
+  "items": [
+    {
+      "id": "perimeno-hrt-tracker-001",
+      "niche": "perimenopause and midlife women's health",
+      "product": "Perimenopause symptom and HRT tracker — printable PDF with daily logs for hot flashes, sleep quality, mood, libido, energy, plus weekly spreads for HRT pellet dosing cycles, bloodwork tracking, and doctor appointment notes. Targets women on or considering HRT who want clinical-grade tracking without medical-school intimidation. Year-round demand, growing audience of midlife women managing perimenopause actively.",
+      "min_price": 7,
+      "max_price": 14,
+      "n_listings": 10,
+      "n_image_prompts": 15,
+      "image_style": "Calm clinical-modern aesthetic. Serene neutrals (warm whites, soft sage green, dusty rose), clean sans-serif typography, generous white space. Photography on light wood or marble surfaces with simple props (ceramic mug, fountain pen, fresh greens, hardcover journal). Avoids both clinical sterility and chaotic 2019-blog-template look."
+    },
+    {
+      "id": "dyslexia-phonics-cards-001",
+      "niche": "specialty homeschool and dyslexia-friendly learning",
+      "product": "Dyslexia-friendly phonics blends flashcards — A5 printable set covering common phonics blends (consonant clusters like bl/cr/sl, digraphs like ch/sh/th, trigraphs like str/spl/tch) using OpenDyslexic font, high-contrast color scheme, large print, generous spacing, and uncluttered card layouts. Designed for homeschool families and tutors working with kids ages 5–9 who need readability-first design, not generic clip art.",
+      "min_price": 5,
+      "max_price": 12,
+      "n_listings": 10,
+      "n_image_prompts": 15,
+      "image_style": "Clean Montessori-inspired aesthetic. Natural wood tones, high contrast, uncluttered photography. Cards displayed on simple wooden trays, natural canvas backgrounds, or neutral linen surfaces. Calm classroom lighting (soft daylight), no busy patterns, no clip art. A few mockups with real children's hands using the cards."
+    }
+  ]
 }
