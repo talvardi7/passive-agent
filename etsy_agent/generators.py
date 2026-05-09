@@ -103,16 +103,28 @@ def generate_listings(niche, product, min_price=5.0, max_price=15.0, n=10):
         tool_choice={"type": "tool", "name": LISTING_TOOL["name"]},
     )
 
-    listings = None
+    raw_listings = None
     for block in response.content:
         if getattr(block, "type", None) == "tool_use":
-            listings = list(dict(block.input).get("listings", []))
+            inp = block.input
+            if not isinstance(inp, dict):
+                raise ValueError(f"submit_listings called with non-dict input: type={type(inp).__name__} value={str(inp)[:300]}")
+            raw_listings = inp.get("listings", [])
             break
-    if listings is None:
+    if raw_listings is None:
         raise ValueError(f"Model didn't call submit_listings. stop_reason={response.stop_reason}")
+    if not isinstance(raw_listings, list):
+        raise ValueError(f"'listings' came back as {type(raw_listings).__name__}, expected list. value={str(raw_listings)[:300]}")
 
-    # Sanitize tags per Etsy's rules
-    for L in listings:
+    # Filter to dicts only — under rare API conditions the model can call the
+    # tool with a malformed array element (string instead of object). Skip
+    # those rather than crash the whole batch.
+    listings = []
+    for idx, L in enumerate(raw_listings):
+        if not isinstance(L, dict):
+            print(f"  Etsy: skipping malformed listing #{idx} (type={type(L).__name__}, value={str(L)[:120]})")
+            continue
+        # Sanitize tags per Etsy's rules
         if isinstance(L.get("tags"), list):
             cleaned = []
             for t in L["tags"]:
@@ -120,6 +132,10 @@ def generate_listings(niche, product, min_price=5.0, max_price=15.0, n=10):
                 if ct and ct not in cleaned:
                     cleaned.append(ct)
             L["tags"] = cleaned[:13]
+        listings.append(L)
+
+    if not listings:
+        raise ValueError(f"All {len(raw_listings)} listings were malformed (no dicts).")
 
     return listings
 
@@ -158,7 +174,27 @@ def generate_image_prompts(product, style="", n=15):
         tool_choice={"type": "tool", "name": IMAGE_PROMPT_TOOL["name"]},
     )
 
+    raw_prompts = None
     for block in response.content:
         if getattr(block, "type", None) == "tool_use":
-            return list(dict(block.input).get("prompts", []))
-    raise ValueError(f"Model didn't call submit_image_prompts. stop_reason={response.stop_reason}")
+            inp = block.input
+            if not isinstance(inp, dict):
+                raise ValueError(f"submit_image_prompts called with non-dict input: type={type(inp).__name__} value={str(inp)[:300]}")
+            raw_prompts = inp.get("prompts", [])
+            break
+    if raw_prompts is None:
+        raise ValueError(f"Model didn't call submit_image_prompts. stop_reason={response.stop_reason}")
+    if not isinstance(raw_prompts, list):
+        raise ValueError(f"'prompts' came back as {type(raw_prompts).__name__}, expected list. value={str(raw_prompts)[:300]}")
+
+    prompts = []
+    for idx, P in enumerate(raw_prompts):
+        if not isinstance(P, dict):
+            print(f"  Etsy: skipping malformed prompt #{idx} (type={type(P).__name__}, value={str(P)[:120]})")
+            continue
+        prompts.append(P)
+
+    if not prompts:
+        raise ValueError(f"All {len(raw_prompts)} prompts were malformed (no dicts).")
+
+    return prompts

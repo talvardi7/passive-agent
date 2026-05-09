@@ -394,14 +394,15 @@ def post_to_hackernews(title, url):
 
 # ── EMAIL REPORT ─────────────────────────────────────────────────────────────
 
-def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, articles=None, newsletter_posts=None, weekday=None, etsy_results=None):
+def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, articles=None, newsletter_posts=None, weekday=None):
+    # Content-lane daily report. Etsy results go in send_etsy_report() so the
+    # two passive-income lanes don't get tangled in one email.
     today = datetime.date.today()
     if weekday is None:
         weekday = today.weekday()
     is_monday = weekday == 0
     is_publish_day = weekday in PUBLISH_DAYS
     week = state["week_number"]
-    etsy_results = etsy_results or []
     new_sales = gumroad["sales_count"] - sales_baseline
     new_revenue = new_sales * 19
     total_rev = gumroad["revenue"]
@@ -486,68 +487,6 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
       {items}
     </div>"""
 
-    # Etsy listings — rendered whenever the queue produced results today.
-    etsy_html = ""
-    if etsy_results:
-        cards = ""
-        for item in etsy_results:
-            item_id = html.escape(str(item.get("id", "")))
-            product = html.escape(str(item.get("product", "")))
-            niche = html.escape(str(item.get("niche", "")))
-            if item.get("error"):
-                cards += f"""
-      <div style="padding:12px 0;border-bottom:1px solid #F4F6FA">
-        <p style="margin:0;font-weight:500;color:#0F1117">❌ {item_id} — {product}</p>
-        <p style="margin:4px 0 0;font-size:12px;color:#9CA3AF">Error: {html.escape(str(item['error']))[:200]}</p>
-      </div>"""
-                continue
-
-            listings = item.get("listings", []) or []
-            prompts = item.get("image_prompts", []) or []
-
-            listings_html = ""
-            for i, L in enumerate(listings, 1):
-                title = html.escape(L.get("title", ""))
-                desc = html.escape(L.get("description", ""))
-                tags = ", ".join(html.escape(t) for t in (L.get("tags") or []))
-                cat = html.escape(L.get("category", ""))
-                price = L.get("suggested_price_usd", "")
-                angle = html.escape(L.get("angle", ""))
-                listings_html += f"""
-        <details style="margin:8px 0;padding:10px;background:#F4F6FA;border-radius:6px">
-          <summary style="cursor:pointer;font-weight:500;color:#0F1117;font-size:13px">{i}. {title}</summary>
-          <div style="margin-top:10px;font-size:12px;color:#374151;line-height:1.5">
-            <p style="margin:6px 0"><b>Angle:</b> {angle}</p>
-            <p style="margin:6px 0"><b>Category:</b> {cat} &middot; <b>Price:</b> ${price}</p>
-            <p style="margin:6px 0"><b>Tags:</b> {tags}</p>
-            <pre style="background:white;padding:10px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;font-size:11px;white-space:pre-wrap;word-wrap:break-word;color:#0F1117;margin:6px 0 0">{desc}</pre>
-          </div>
-        </details>"""
-
-            prompts_html = ""
-            for i, P in enumerate(prompts, 1):
-                use_case = html.escape(P.get("use_case", ""))
-                ptext = html.escape(P.get("prompt", ""))
-                prompts_html += f"""
-        <li style="margin:6px 0;font-size:12px;color:#374151"><b>{use_case}:</b> {ptext}</li>"""
-
-            cards += f"""
-      <div style="padding:14px 0;border-bottom:1px solid #F4F6FA">
-        <p style="margin:0;font-weight:500;color:#0F1117">✅ {item_id} — {product}</p>
-        <p style="margin:4px 0 10px;font-size:11px;color:#9CA3AF">Niche: {niche} &middot; {len(listings)} listings &middot; {len(prompts)} image prompts</p>
-        <p style="margin:8px 0 4px;font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em">Listings (click to expand)</p>
-        {listings_html}
-        <p style="margin:14px 0 4px;font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em">Image prompts</p>
-        <ol style="padding-left:18px;margin:0">{prompts_html}</ol>
-      </div>"""
-
-        etsy_html = f"""
-    <div class="card" style="border-left:3px solid #378ADD">
-      <p class="section-title">Etsy queue — generated today</p>
-      {cards}
-      <p style="margin:12px 0 0;font-size:11px;color:#9CA3AF">Add more product ideas at <a href="https://github.com/talvardi7/passive-agent/blob/main/etsy_queue.json" style="color:#378ADD;text-decoration:none">etsy_queue.json</a> on GitHub.</p>
-    </div>"""
-
     # Indie Hackers draft (Mondays only — paste-ready for the user)
     ih_draft_html = ""
     if is_monday and results.get("ih_draft") and results["ih_draft"].get("body"):
@@ -595,7 +534,6 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
 
   {published_today_html}
   {ih_draft_html}
-  {etsy_html}
 
   <div class="card">
     <p class="section-title">Today's numbers</p>
@@ -672,6 +610,107 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
         server.login(SMTP_EMAIL, SMTP_PASSWORD)
         server.sendmail(SMTP_EMAIL, REPORT_EMAIL, msg.as_string())
     print(f"  Report emailed to {REPORT_EMAIL}")
+
+
+def send_etsy_report(state, etsy_results):
+    # Etsy-lane email — separate from the content report so the two passive-
+    # income lanes stay readable. Only sends when there's something to say.
+    if not etsy_results:
+        return
+
+    today = datetime.date.today()
+    success_count = sum(1 for r in etsy_results if not r.get("error"))
+    error_count = len(etsy_results) - success_count
+
+    cards = ""
+    for item in etsy_results:
+        item_id = html.escape(str(item.get("id", "")))
+        product = html.escape(str(item.get("product", "")))
+        niche = html.escape(str(item.get("niche", "")))
+        if item.get("error"):
+            cards += f"""
+      <div class="card" style="border-left:3px solid #EF9F27">
+        <p style="margin:0;font-weight:500;color:#0F1117;font-size:14px">❌ {item_id}</p>
+        <p style="margin:6px 0;font-size:12px;color:#374151">{product}</p>
+        <p style="margin:8px 0 0;font-size:12px;color:#9CA3AF">Error: <code style="background:#F4F6FA;padding:2px 6px;border-radius:3px;font-size:11px">{html.escape(str(item['error']))[:300]}</code></p>
+        <p style="margin:8px 0 0;font-size:11px;color:#9CA3AF">This item was NOT marked processed; the agent will retry on the next run.</p>
+      </div>"""
+            continue
+
+        listings = item.get("listings", []) or []
+        prompts = item.get("image_prompts", []) or []
+
+        listings_html = ""
+        for i, L in enumerate(listings, 1):
+            title = html.escape(str(L.get("title", "")))
+            desc = html.escape(str(L.get("description", "")))
+            tags = ", ".join(html.escape(str(t)) for t in (L.get("tags") or []))
+            cat = html.escape(str(L.get("category", "")))
+            price = L.get("suggested_price_usd", "")
+            angle = html.escape(str(L.get("angle", "")))
+            listings_html += f"""
+        <details style="margin:8px 0;padding:10px;background:#F4F6FA;border-radius:6px">
+          <summary style="cursor:pointer;font-weight:500;color:#0F1117;font-size:13px">{i}. {title}</summary>
+          <div style="margin-top:10px;font-size:12px;color:#374151;line-height:1.5">
+            <p style="margin:6px 0"><b>Angle:</b> {angle}</p>
+            <p style="margin:6px 0"><b>Category:</b> {cat} &middot; <b>Price:</b> ${price}</p>
+            <p style="margin:6px 0"><b>Tags:</b> {tags}</p>
+            <pre style="background:white;padding:10px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;font-size:11px;white-space:pre-wrap;word-wrap:break-word;color:#0F1117;margin:6px 0 0">{desc}</pre>
+          </div>
+        </details>"""
+
+        prompts_html = ""
+        for i, P in enumerate(prompts, 1):
+            use_case = html.escape(str(P.get("use_case", "")))
+            ptext = html.escape(str(P.get("prompt", "")))
+            prompts_html += f"""
+        <li style="margin:6px 0;font-size:12px;color:#374151"><b>{use_case}:</b> {ptext}</li>"""
+
+        cards += f"""
+      <div class="card" style="border-left:3px solid #1D9E75">
+        <p style="margin:0;font-weight:500;color:#0F1117;font-size:14px">✅ {item_id}</p>
+        <p style="margin:6px 0;font-size:13px;color:#0F1117">{product}</p>
+        <p style="margin:6px 0 14px;font-size:11px;color:#9CA3AF">Niche: {niche} &middot; {len(listings)} listings &middot; {len(prompts)} image prompts</p>
+        <p style="margin:8px 0 4px;font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em">Listings (click each to expand)</p>
+        {listings_html}
+        <p style="margin:14px 0 4px;font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em">Image prompts</p>
+        <ol style="padding-left:18px;margin:0">{prompts_html}</ol>
+      </div>"""
+
+    summary_line = f"{success_count} generated"
+    if error_count:
+        summary_line += f", {error_count} failed (will retry)"
+
+    body = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><style>
+  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F4F6FA; margin: 0; padding: 24px; }}
+  .card {{ background: white; border-radius: 12px; padding: 22px; margin-bottom: 16px; border: 1px solid #E2E8F0; }}
+  .header {{ background: #0F1117; border-radius: 12px; padding: 26px; margin-bottom: 16px; }}
+  h1 {{ color: white; margin: 0 0 6px; font-size: 22px; font-weight: 500; }}
+  .sub {{ color: #6B7280; font-size: 13px; margin: 0; }}
+  .footer {{ font-size: 11px; color: #9CA3AF; text-align: center; margin-top: 24px; }}
+</style></head>
+<body>
+  <div class="header">
+    <h1>🛍️ Etsy Queue Report — {today}</h1>
+    <p class="sub">{summary_line} &middot; Automated by your passive income agent</p>
+  </div>
+  {cards}
+  <p class="footer">Add more product ideas at <a href="https://github.com/talvardi7/passive-agent/blob/main/etsy_queue.json" style="color:#378ADD;text-decoration:none">etsy_queue.json</a> on GitHub. Each item is processed exactly once.</p>
+</body>
+</html>"""
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"🛍️ Etsy · {summary_line} · {today}"
+    msg["From"] = f"Passive Agent <{SMTP_EMAIL}>"
+    msg["To"] = REPORT_EMAIL
+    msg.attach(MIMEText(body, "html"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.sendmail(SMTP_EMAIL, REPORT_EMAIL, msg.as_string())
+    print(f"  Etsy report emailed to {REPORT_EMAIL}")
 
 # ── MAIN WEEKLY JOB ──────────────────────────────────────────────────────────
 
@@ -843,14 +882,17 @@ def daily_job():
     state["total_sales_baseline"] = gumroad["sales_count"]
     save_state(state)
 
-    # 4. Send daily email
+    # 4. Send the two daily emails — content lane and Etsy lane separately.
     if HAS_EMAIL:
         try:
             send_report(state, gumroad, devto_stats, beehiiv_stats,
-                        sales_baseline, results, articles, newsletter_posts, weekday,
-                        etsy_results=etsy_results)
+                        sales_baseline, results, articles, newsletter_posts, weekday)
         except Exception as e:
             print(f"  Email: ❌ {e}")
+        try:
+            send_etsy_report(state, etsy_results)
+        except Exception as e:
+            print(f"  Etsy email: ❌ {e}")
 
     print(f"[{datetime.datetime.now()}] ── Daily job complete ──\n")
 
