@@ -13,6 +13,12 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from anthropic import Anthropic
 
+try:
+    from etsy_agent.queue import process_etsy_queue
+except Exception as _e:
+    process_etsy_queue = None
+    print(f"  (etsy_agent unavailable: {_e})")
+
 # Force unbuffered output so Render logs show everything in real time
 os.environ["PYTHONUNBUFFERED"] = "1"
 sys.stdout.reconfigure(line_buffering=True)
@@ -388,13 +394,14 @@ def post_to_hackernews(title, url):
 
 # ── EMAIL REPORT ─────────────────────────────────────────────────────────────
 
-def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, articles=None, newsletter_posts=None, weekday=None):
+def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, articles=None, newsletter_posts=None, weekday=None, etsy_results=None):
     today = datetime.date.today()
     if weekday is None:
         weekday = today.weekday()
     is_monday = weekday == 0
     is_publish_day = weekday in PUBLISH_DAYS
     week = state["week_number"]
+    etsy_results = etsy_results or []
     new_sales = gumroad["sales_count"] - sales_baseline
     new_revenue = new_sales * 19
     total_rev = gumroad["revenue"]
@@ -479,6 +486,68 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
       {items}
     </div>"""
 
+    # Etsy listings — rendered whenever the queue produced results today.
+    etsy_html = ""
+    if etsy_results:
+        cards = ""
+        for item in etsy_results:
+            item_id = html.escape(str(item.get("id", "")))
+            product = html.escape(str(item.get("product", "")))
+            niche = html.escape(str(item.get("niche", "")))
+            if item.get("error"):
+                cards += f"""
+      <div style="padding:12px 0;border-bottom:1px solid #F4F6FA">
+        <p style="margin:0;font-weight:500;color:#0F1117">❌ {item_id} — {product}</p>
+        <p style="margin:4px 0 0;font-size:12px;color:#9CA3AF">Error: {html.escape(str(item['error']))[:200]}</p>
+      </div>"""
+                continue
+
+            listings = item.get("listings", []) or []
+            prompts = item.get("image_prompts", []) or []
+
+            listings_html = ""
+            for i, L in enumerate(listings, 1):
+                title = html.escape(L.get("title", ""))
+                desc = html.escape(L.get("description", ""))
+                tags = ", ".join(html.escape(t) for t in (L.get("tags") or []))
+                cat = html.escape(L.get("category", ""))
+                price = L.get("suggested_price_usd", "")
+                angle = html.escape(L.get("angle", ""))
+                listings_html += f"""
+        <details style="margin:8px 0;padding:10px;background:#F4F6FA;border-radius:6px">
+          <summary style="cursor:pointer;font-weight:500;color:#0F1117;font-size:13px">{i}. {title}</summary>
+          <div style="margin-top:10px;font-size:12px;color:#374151;line-height:1.5">
+            <p style="margin:6px 0"><b>Angle:</b> {angle}</p>
+            <p style="margin:6px 0"><b>Category:</b> {cat} &middot; <b>Price:</b> ${price}</p>
+            <p style="margin:6px 0"><b>Tags:</b> {tags}</p>
+            <pre style="background:white;padding:10px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;font-size:11px;white-space:pre-wrap;word-wrap:break-word;color:#0F1117;margin:6px 0 0">{desc}</pre>
+          </div>
+        </details>"""
+
+            prompts_html = ""
+            for i, P in enumerate(prompts, 1):
+                use_case = html.escape(P.get("use_case", ""))
+                ptext = html.escape(P.get("prompt", ""))
+                prompts_html += f"""
+        <li style="margin:6px 0;font-size:12px;color:#374151"><b>{use_case}:</b> {ptext}</li>"""
+
+            cards += f"""
+      <div style="padding:14px 0;border-bottom:1px solid #F4F6FA">
+        <p style="margin:0;font-weight:500;color:#0F1117">✅ {item_id} — {product}</p>
+        <p style="margin:4px 0 10px;font-size:11px;color:#9CA3AF">Niche: {niche} &middot; {len(listings)} listings &middot; {len(prompts)} image prompts</p>
+        <p style="margin:8px 0 4px;font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em">Listings (click to expand)</p>
+        {listings_html}
+        <p style="margin:14px 0 4px;font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em">Image prompts</p>
+        <ol style="padding-left:18px;margin:0">{prompts_html}</ol>
+      </div>"""
+
+        etsy_html = f"""
+    <div class="card" style="border-left:3px solid #378ADD">
+      <p class="section-title">Etsy queue — generated today</p>
+      {cards}
+      <p style="margin:12px 0 0;font-size:11px;color:#9CA3AF">Add more product ideas at <a href="https://github.com/talvardi7/passive-agent/blob/main/etsy_queue.json" style="color:#378ADD;text-decoration:none">etsy_queue.json</a> on GitHub.</p>
+    </div>"""
+
     # Indie Hackers draft (Mondays only — paste-ready for the user)
     ih_draft_html = ""
     if is_monday and results.get("ih_draft") and results["ih_draft"].get("body"):
@@ -526,6 +595,7 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
 
   {published_today_html}
   {ih_draft_html}
+  {etsy_html}
 
   <div class="card">
     <p class="section-title">Today's numbers</p>
@@ -752,6 +822,15 @@ def daily_job():
                 results["ih_draft"] = {"status": "❌", "title": str(e), "body": ""}
                 print(f"  Indie Hackers draft: ❌ {e}")
 
+    # 2b. Process Etsy queue (any items added to etsy_queue.json that haven't
+    #     been generated yet). Falls through cleanly if queue is empty.
+    etsy_results = []
+    if process_etsy_queue is not None:
+        try:
+            etsy_results = process_etsy_queue(state)
+        except Exception as e:
+            print(f"  Etsy queue: ❌ {e}")
+
     # 3. Track daily stats
     sales_baseline = state.get("total_sales_baseline", 0)
     state.setdefault("daily_stats", []).append({
@@ -768,7 +847,8 @@ def daily_job():
     if HAS_EMAIL:
         try:
             send_report(state, gumroad, devto_stats, beehiiv_stats,
-                        sales_baseline, results, articles, newsletter_posts, weekday)
+                        sales_baseline, results, articles, newsletter_posts, weekday,
+                        etsy_results=etsy_results)
         except Exception as e:
             print(f"  Email: ❌ {e}")
 

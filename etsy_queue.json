@@ -1,0 +1,4 @@
+{
+  "_comment": "Add product ideas to 'items'. Each item is processed exactly once (tracked via state.etsy_processed). Required fields: id, niche, product. Optional: min_price, max_price, n_listings (default 10), n_image_prompts (default 15), image_style. See etsy_agent/README.md for examples.",
+  "items": []
+}
