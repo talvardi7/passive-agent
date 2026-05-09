@@ -12,8 +12,10 @@ import os
 import datetime
 
 from .generators import generate_listings, generate_image_prompts
+from .image_gen import generate_images, HAS_REPLICATE
 
 QUEUE_FILE = "etsy_queue.json"
+IMAGES_DIR = "etsy_outputs"
 
 
 def load_queue():
@@ -62,12 +64,23 @@ def process_etsy_queue(state):
         max_price = float(item.get("max_price", 15))
         style = item.get("image_style", "")
 
-        out = {"id": item_id, "niche": niche, "product": product, "listings": [], "image_prompts": [], "error": None}
+        out = {"id": item_id, "niche": niche, "product": product, "listings": [], "image_prompts": [], "images": [], "error": None}
         try:
             print(f"  Etsy: generating listings for {item_id!r}: {product[:60]}...")
             out["listings"] = generate_listings(niche, product, min_price, max_price, n_listings)
             print(f"  Etsy: generating image prompts for {item_id!r}...")
             out["image_prompts"] = generate_image_prompts(product, style, n_prompts)
+
+            # Phase 2: actually render images via Replicate, if configured.
+            # Cap how many we generate (cost control) -- default 5 of the
+            # requested prompts. Override with `n_images_to_generate` per item.
+            if HAS_REPLICATE:
+                gen_limit = int(item.get("n_images_to_generate", 5))
+                item_dir = os.path.join(IMAGES_DIR, item_id)
+                out["images"] = generate_images(out["image_prompts"], item_dir, item_id, limit=gen_limit)
+            else:
+                print(f"  Etsy: REPLICATE_API_TOKEN not set -- skipping image rendering. Add it to env to enable.")
+
             processed_ids.add(item_id)
             state.setdefault("etsy_processed", []).append(item_id)
             state.setdefault("etsy_history", []).append({
@@ -77,8 +90,9 @@ def process_etsy_queue(state):
                 "date": today,
                 "listings_count": len(out["listings"]),
                 "prompts_count": len(out["image_prompts"]),
+                "images_count": len([i for i in out["images"] if i.get("path")]),
             })
-            print(f"  Etsy: ✅ {item_id!r} -- {len(out['listings'])} listings, {len(out['image_prompts'])} prompts")
+            print(f"  Etsy: ✅ {item_id!r} -- {len(out['listings'])} listings, {len(out['image_prompts'])} prompts, {len([i for i in out['images'] if i.get('path')])} images")
         except Exception as e:
             out["error"] = str(e)
             print(f"  Etsy: ❌ {item_id!r} -- {e}")

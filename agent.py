@@ -11,6 +11,7 @@ Zero involvement required.
 import os, sys, re, html, json, time, datetime, smtplib, requests, schedule
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 from anthropic import Anthropic
 
 try:
@@ -639,6 +640,7 @@ def send_etsy_report(state, etsy_results):
 
         listings = item.get("listings", []) or []
         prompts = item.get("image_prompts", []) or []
+        images = item.get("images", []) or []
 
         listings_html = ""
         for i, L in enumerate(listings, 1):
@@ -666,11 +668,26 @@ def send_etsy_report(state, etsy_results):
             prompts_html += f"""
         <li style="margin:6px 0;font-size:12px;color:#374151"><b>{use_case}:</b> {ptext}</li>"""
 
+        # Image-rendering summary line (only meaningful if Replicate is wired up)
+        rendered_imgs = [i for i in images if i.get("path")]
+        failed_imgs = [i for i in images if i.get("error")]
+        images_summary = ""
+        if rendered_imgs or failed_imgs:
+            parts = []
+            if rendered_imgs:
+                parts.append(f"<b>{len(rendered_imgs)}</b> images attached to this email")
+            if failed_imgs:
+                parts.append(f"{len(failed_imgs)} failed")
+            images_summary = f"""
+        <p style="margin:8px 0 4px;font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em">Images</p>
+        <p style="margin:0 0 12px;font-size:12px;color:#374151">{' &middot; '.join(parts)}. Filenames begin with <code style="background:#F4F6FA;padding:1px 5px;border-radius:3px;font-size:11px">{item_id}_</code>.</p>"""
+
         cards += f"""
       <div class="card" style="border-left:3px solid #1D9E75">
         <p style="margin:0;font-weight:500;color:#0F1117;font-size:14px">✅ {item_id}</p>
         <p style="margin:6px 0;font-size:13px;color:#0F1117">{product}</p>
-        <p style="margin:6px 0 14px;font-size:11px;color:#9CA3AF">Niche: {niche} &middot; {len(listings)} listings &middot; {len(prompts)} image prompts</p>
+        <p style="margin:6px 0 14px;font-size:11px;color:#9CA3AF">Niche: {niche} &middot; {len(listings)} listings &middot; {len(prompts)} image prompts &middot; {len(rendered_imgs)} images rendered</p>
+        {images_summary}
         <p style="margin:8px 0 4px;font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em">Listings (click each to expand)</p>
         {listings_html}
         <p style="margin:14px 0 4px;font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em">Image prompts</p>
@@ -701,16 +718,43 @@ def send_etsy_report(state, etsy_results):
 </body>
 </html>"""
 
-    msg = MIMEMultipart("alternative")
+    # Mixed multipart so we can attach the generated images alongside the HTML.
+    msg = MIMEMultipart("mixed")
     msg["Subject"] = f"🛍️ Etsy · {summary_line} · {today}"
     msg["From"] = f"Passive Agent <{SMTP_EMAIL}>"
     msg["To"] = REPORT_EMAIL
-    msg.attach(MIMEText(body, "html"))
+
+    # The HTML body itself goes in an "alternative" sub-part so email clients
+    # treat it as the readable body and the attachments as attachments.
+    body_part = MIMEMultipart("alternative")
+    body_part.attach(MIMEText(body, "html"))
+    msg.attach(body_part)
+
+    # Attach all rendered images across all items. Cap total size at ~22MB
+    # (Gmail's hard limit is 25MB) just in case.
+    total_bytes = 0
+    for item in etsy_results:
+        for img in (item.get("images") or []):
+            path = img.get("path")
+            if not path or not os.path.exists(path):
+                continue
+            try:
+                with open(path, "rb") as f:
+                    img_data = f.read()
+                if total_bytes + len(img_data) > 22 * 1024 * 1024:
+                    print(f"  Etsy email: attachment cap reached, skipping remaining images")
+                    break
+                part = MIMEImage(img_data, _subtype="jpeg")
+                part.add_header("Content-Disposition", f'attachment; filename="{os.path.basename(path)}"')
+                msg.attach(part)
+                total_bytes += len(img_data)
+            except Exception as e:
+                print(f"  Etsy email: couldn't attach {path}: {e}")
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(SMTP_EMAIL, SMTP_PASSWORD)
         server.sendmail(SMTP_EMAIL, REPORT_EMAIL, msg.as_string())
-    print(f"  Etsy report emailed to {REPORT_EMAIL}")
+    print(f"  Etsy report emailed to {REPORT_EMAIL} ({total_bytes // 1024} KB attached)")
 
 # ── MAIN WEEKLY JOB ──────────────────────────────────────────────────────────
 

@@ -40,6 +40,7 @@ Generates Etsy listings (titles, descriptions, tags) and matching image-generati
 | `n_listings` | no | 10 | How many listing variations to generate (different angles per variation). |
 | `n_image_prompts` | no | 15 | How many image-gen prompts to generate (mix of hero/mockup/flatlay/detail/lifestyle). |
 | `image_style` | no | "" | Style direction for the photos. E.g. `"minimalist black and white"`, `"warm earth tones, hygge"`. |
+| `n_images_to_generate` | no | 5 | Of the `n_image_prompts` generated, how many to actually render via Replicate. Capped to control cost. Set to 0 to skip rendering. |
 
 ## What you get back (via email)
 
@@ -63,11 +64,32 @@ You then:
 5. Render auto-deploys (~5 min)
 6. Wait for the next daily email (or restart the Render service to trigger immediately)
 
+## Image generation (Stage 2 — built, opt-in)
+
+If you set the env var `REPLICATE_API_TOKEN` on Render, the agent will also **render actual images** from a subset of the generated prompts (default: 5 per product, configurable via `n_images_to_generate` per queue item). They arrive as JPEG attachments on the Etsy email.
+
+**Setup (5 minutes):**
+
+1. Sign up at [replicate.com](https://replicate.com) — free signup, no subscription
+2. Add a credit card (pay-as-you-go billing)
+3. Generate an API token at [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens)
+4. Add `REPLICATE_API_TOKEN=<your-token>` in Render's Environment tab → Save Changes (auto-redeploys)
+5. The next queue run will render images automatically
+
+**Cost:** FLUX schnell (default model) is ~$0.003 per image. Five images per product = ~$0.015. Very cheap.
+
+**Override the model** (e.g., for higher quality):
+```
+REPLICATE_MODEL=black-forest-labs/flux-dev   # ~$0.025 per image, sharper output
+```
+
+If `REPLICATE_API_TOKEN` is unset, the agent gracefully skips image rendering and just delivers prompts (existing Stage 1 behavior).
+
 ## Roadmap (not yet built)
 
-- **Stage 2** — wire up image generation via Replicate API (so the agent produces actual images, not just prompts). Adds ~$0.005-0.05/image cost.
-- **Stage 3** — Etsy API integration: auto-create listings on your shop, track sales, auto-generate variations of bestsellers. Requires approved Etsy developer account.
-- **Stage 4** — bestseller iteration loop: read sales data daily, queue more variations of winners, retire underperformers automatically.
+- **Stage 3** — programmatic PDF generation per product type (phonics cards via ReportLab + OpenDyslexic font, trackers, planners). Removes the Canva step for content-heavy products.
+- **Stage 4** — Etsy API integration: auto-create listings on your shop, track sales, auto-generate variations of bestsellers. Requires approved Etsy developer account.
+- **Stage 5** — bestseller iteration loop: read sales data daily, queue more variations of winners, retire underperformers automatically.
 
 ## Why a queue file instead of a CLI
 
