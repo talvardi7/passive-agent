@@ -8,6 +8,7 @@ output is guaranteed structured and we never parse JSON from text.
 
 import os
 import re
+import json
 from anthropic import Anthropic
 
 _client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
@@ -113,6 +114,14 @@ def generate_listings(niche, product, min_price=5.0, max_price=15.0, n=10):
             break
     if raw_listings is None:
         raise ValueError(f"Model didn't call submit_listings. stop_reason={response.stop_reason}")
+    # Anthropic's tool-use occasionally returns the array as a JSON-encoded
+    # string instead of a real array. Recover by re-parsing.
+    if isinstance(raw_listings, str):
+        try:
+            raw_listings = json.loads(raw_listings)
+            print(f"  Etsy: 'listings' returned as str; recovered via json.loads ({len(raw_listings)} items)")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"'listings' came back as str and didn't parse as JSON ({e}). value={raw_listings[:300]}")
     if not isinstance(raw_listings, list):
         raise ValueError(f"'listings' came back as {type(raw_listings).__name__}, expected list. value={str(raw_listings)[:300]}")
 
@@ -184,6 +193,12 @@ def generate_image_prompts(product, style="", n=15):
             break
     if raw_prompts is None:
         raise ValueError(f"Model didn't call submit_image_prompts. stop_reason={response.stop_reason}")
+    if isinstance(raw_prompts, str):
+        try:
+            raw_prompts = json.loads(raw_prompts)
+            print(f"  Etsy: 'prompts' returned as str; recovered via json.loads ({len(raw_prompts)} items)")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"'prompts' came back as str and didn't parse as JSON ({e}). value={raw_prompts[:300]}")
     if not isinstance(raw_prompts, list):
         raise ValueError(f"'prompts' came back as {type(raw_prompts).__name__}, expected list. value={str(raw_prompts)[:300]}")
 
