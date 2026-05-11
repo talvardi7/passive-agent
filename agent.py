@@ -77,17 +77,47 @@ def pick_angle(recent_angles):
             return candidate
     return ANGLES[0]
 
+def _devto_published_today():
+    """Query DEV.to's API to see if our account already has a post dated
+    today. Resilient to state.json wipes (which happen on Render redeploys).
+    Returns False on any error so we don't accidentally block a legitimate
+    first run for the day."""
+    if not HAS_DEVTO:
+        return False
+    try:
+        r = requests.get(
+            "https://dev.to/api/articles/me/published",
+            headers={"api-key": DEVTO_API_KEY},
+            params={"per_page": 30},
+            timeout=10,
+        )
+        r.raise_for_status()
+        today_str = str(datetime.date.today())
+        for a in r.json():
+            if (a.get("published_at") or "")[:10] == today_str:
+                return True
+        return False
+    except Exception as e:
+        print(f"  DEV.to dedup check failed (treating as not-yet-posted): {e}")
+        return False
+
+
 def already_done_today(state, today, platform):
-    """Idempotency: True if a post for this date+platform is already in state.
-    `platform` is one of 'devto', 'hackernews', 'newsletter', or the special
-    'ih_draft' (stored separately in state['ih_drafts'])."""
+    """Idempotency: True if a post for this date+platform was already created.
+    Checks state.json first; for DEV.to, falls back to the actual API (which
+    is the authoritative record and survives state-file wipes on redeploy)."""
     today_str = str(today)
     if platform == "ih_draft":
         return any(d.get("date") == today_str for d in state.get("ih_drafts", []))
-    return any(
-        p.get("platform") == platform and p.get("date") == today_str
-        for p in state.get("posts_made", [])
-    )
+    # State-based check
+    if any(p.get("platform") == platform and p.get("date") == today_str
+           for p in state.get("posts_made", [])):
+        return True
+    # API-based fallback for DEV.to (the platform with the highest cost of a
+    # duplicate, since each generates a real public article)
+    if platform == "devto":
+        return _devto_published_today()
+    return False
 
 # ── STATS COLLECTION ─────────────────────────────────────────────────────────
 
@@ -353,7 +383,11 @@ def post_to_devto(content):
     return r.json()
 
 def post_newsletter(content):
+    # Beehiiv added 'title' as required (separate from 'subject') sometime
+    # between when this code was first written and now. Send both -- title
+    # is what's shown in the web/RSS reader; subject is the email subject.
     payload = {
+        "title": content["subject"],
         "subject": content["subject"],
         "content": {"free": {"web": content["body_html"], "email": content["body_html"]}},
         "status": "confirmed",
