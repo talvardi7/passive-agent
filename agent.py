@@ -44,7 +44,17 @@ HAS_EMAIL      = SMTP_PASSWORD not in ("", "FILL_IN_LATER")
 HAS_HN         = HN_USERNAME not in ("", "FILL_IN_LATER") and HN_PASSWORD not in ("", "FILL_IN_LATER")
 
 client = Anthropic(api_key=ANTHROPIC_API_KEY)
-STATE_FILE = "state.json"
+
+# Allow state.json to live on a mounted persistent disk (e.g. Render's disk
+# add-on) so it survives redeploys. Set STATE_DIR env var to the mount path.
+# Without it, state lives in the working dir (gets wiped on each Render deploy).
+_STATE_DIR = os.environ.get("STATE_DIR", "").strip()
+if _STATE_DIR:
+    os.makedirs(_STATE_DIR, exist_ok=True)
+    STATE_FILE = os.path.join(_STATE_DIR, "state.json")
+    print(f"  State persistence: {STATE_FILE}")
+else:
+    STATE_FILE = "state.json"
 
 DEVTO_TAGS_ROTATION = [
     ["ai", "productivity", "career", "engineering"],
