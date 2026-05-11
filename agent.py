@@ -77,6 +77,18 @@ def pick_angle(recent_angles):
             return candidate
     return ANGLES[0]
 
+def already_done_today(state, today, platform):
+    """Idempotency: True if a post for this date+platform is already in state.
+    `platform` is one of 'devto', 'hackernews', 'newsletter', or the special
+    'ih_draft' (stored separately in state['ih_drafts'])."""
+    today_str = str(today)
+    if platform == "ih_draft":
+        return any(d.get("date") == today_str for d in state.get("ih_drafts", []))
+    return any(
+        p.get("platform") == platform and p.get("date") == today_str
+        for p in state.get("posts_made", [])
+    )
+
 # ── STATS COLLECTION ─────────────────────────────────────────────────────────
 
 def get_gumroad_stats():
@@ -341,18 +353,33 @@ def post_to_devto(content):
     return r.json()
 
 def post_newsletter(content):
+    payload = {
+        "subject": content["subject"],
+        "content": {"free": {"web": content["body_html"], "email": content["body_html"]}},
+        "status": "confirmed",
+        "send_at": int(time.time()) + 300,
+    }
     r = requests.post(
         f"https://api.beehiiv.com/v2/publications/{BEEHIIV_PUB_ID}/posts",
         headers={"Authorization": f"Bearer {BEEHIIV_API_KEY}", "Content-Type": "application/json"},
-        json={
-            "subject": content["subject"],
-            "content": {"free": {"web": content["body_html"], "email": content["body_html"]}},
-            "status": "confirmed",
-            "send_at": int(time.time()) + 300,
-        },
+        json=payload,
         timeout=15
     )
-    r.raise_for_status()
+    if r.status_code >= 400:
+        # Capture Beehiiv's error body so we can see exactly what they rejected.
+        try:
+            err_detail = json.dumps(r.json())[:400]
+        except Exception:
+            err_detail = r.text[:400]
+        # Also include which fields we sent (without the full body_html) so we
+        # can correlate the rejection with the input.
+        sent_meta = {
+            "subject_len": len(payload.get("subject", "")),
+            "body_html_len": len(payload["content"]["free"]["web"]),
+            "status": payload.get("status"),
+            "send_at_offset_sec": payload.get("send_at", 0) - int(time.time()),
+        }
+        raise RuntimeError(f"Beehiiv {r.status_code}: {err_detail} | sent: {sent_meta}")
     return r.json()
 
 def post_to_hackernews(title, url):
@@ -845,14 +872,20 @@ def daily_job():
 
     # 2. Publish new content on Mon/Wed/Fri
     if is_publish_day:
-        if is_monday:
+        # Gate week_number increment to once per calendar Monday, so multiple
+        # daily_job invocations on the same Monday (e.g. due to a redeploy)
+        # don't keep bumping the number.
+        if is_monday and state.get("week_number_last_set") != str(today):
             state["week_number"] += 1
+            state["week_number_last_set"] = str(today)
         week = state["week_number"]
         devto_format = {0: "devto_long", 2: "devto_medium", 3: "devto_medium", 4: "devto_roundup"}[weekday]
         day_name_log = PUBLISH_DAYS.get(weekday, "thursday")
         print(f"  {day_name_log.title()} — publishing {devto_format} (week {week})")
 
-        if HAS_DEVTO:
+        if HAS_DEVTO and already_done_today(state, today, "devto"):
+            print(f"  DEV.to: ⏭  already posted today, skipping")
+        elif HAS_DEVTO:
             try:
                 c = generate_content(week, devto_format, state)
                 angle = c.pop("_angle", "")
@@ -868,7 +901,9 @@ def daily_job():
 
         time.sleep(3)
 
-        if HAS_HN and results.get("devto", {}).get("status") == "✅" and results["devto"].get("url"):
+        if HAS_HN and already_done_today(state, today, "hackernews"):
+            print(f"  Hacker News: ⏭  already submitted today, skipping")
+        elif HAS_HN and results.get("devto", {}).get("status") == "✅" and results["devto"].get("url"):
             try:
                 hn_resp = post_to_hackernews(results["devto"]["title"], results["devto"]["url"])
                 results["hn"] = {"status": "✅", "title": results["devto"]["title"], "url": hn_resp["hn_url"]}
@@ -880,7 +915,9 @@ def daily_job():
 
             time.sleep(3)
 
-        if is_monday and HAS_NEWSLETTER:
+        if is_monday and HAS_NEWSLETTER and already_done_today(state, today, "newsletter"):
+            print(f"  Newsletter: ⏭  already sent today, skipping")
+        elif is_monday and HAS_NEWSLETTER:
             try:
                 c = generate_content(week, "newsletter", state)
                 angle = c.pop("_angle", "")
@@ -893,7 +930,9 @@ def daily_job():
                 results["newsletter"] = {"status": "❌", "subject": str(e)}
                 print(f"  Newsletter: ❌ {e}")
 
-        if is_monday:
+        if is_monday and already_done_today(state, today, "ih_draft"):
+            print(f"  Indie Hackers draft: ⏭  already drafted today, skipping")
+        elif is_monday:
             try:
                 c = generate_content(week, "ih_draft", state)
                 angle = c.pop("_angle", "")
