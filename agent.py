@@ -392,39 +392,10 @@ def post_to_devto(content):
     r.raise_for_status()
     return r.json()
 
-def post_newsletter(content):
-    # Beehiiv added 'title' as required (separate from 'subject') sometime
-    # between when this code was first written and now. Send both -- title
-    # is what's shown in the web/RSS reader; subject is the email subject.
-    payload = {
-        "title": content["subject"],
-        "subject": content["subject"],
-        "content": {"free": {"web": content["body_html"], "email": content["body_html"]}},
-        "status": "confirmed",
-        "send_at": int(time.time()) + 300,
-    }
-    r = requests.post(
-        f"https://api.beehiiv.com/v2/publications/{BEEHIIV_PUB_ID}/posts",
-        headers={"Authorization": f"Bearer {BEEHIIV_API_KEY}", "Content-Type": "application/json"},
-        json=payload,
-        timeout=15
-    )
-    if r.status_code >= 400:
-        # Capture Beehiiv's error body so we can see exactly what they rejected.
-        try:
-            err_detail = json.dumps(r.json())[:400]
-        except Exception:
-            err_detail = r.text[:400]
-        # Also include which fields we sent (without the full body_html) so we
-        # can correlate the rejection with the input.
-        sent_meta = {
-            "subject_len": len(payload.get("subject", "")),
-            "body_html_len": len(payload["content"]["free"]["web"]),
-            "status": payload.get("status"),
-            "send_at_offset_sec": payload.get("send_at", 0) - int(time.time()),
-        }
-        raise RuntimeError(f"Beehiiv {r.status_code}: {err_detail} | sent: {sent_meta}")
-    return r.json()
+# Note: post_newsletter() was removed. Beehiiv moved the publish API to the
+# enterprise-only tier (HTTP 403 "SEND_API_NOT_ENTERPRISE_PLAN"). The agent
+# now generates a newsletter draft and includes it in the daily email --
+# user pastes into Beehiiv's editor manually. Same pattern as ih_draft.
 
 def post_to_hackernews(title, url):
     # HN has no submission API — log into news.ycombinator.com, scrape the
@@ -549,14 +520,34 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
             r = results["hn"]
             link = f'<a href="{r["url"]}" style="color:#378ADD;text-decoration:none">View on HN ↗</a>' if r.get("url") else ""
             items += f'<div class="action-row"><span>{r["status"]}</span><span>Hacker News: <b>{r["title"]}</b> {link}</span></div>'
-        if results.get("newsletter"):
-            r = results["newsletter"]
-            items += f'<div class="action-row"><span>{r["status"]}</span><span>Newsletter: <b>{r["subject"]}</b></span></div>'
         if items:
             published_today_html = f"""
     <div class="card" style="border-left:3px solid #1D9E75">
       <p class="section-title">Published today</p>
       {items}
+    </div>"""
+
+    # Newsletter draft (Mondays only — paste into Beehiiv since their send API
+    # is now enterprise-only)
+    newsletter_draft_html = ""
+    if is_monday and results.get("newsletter_draft") and results["newsletter_draft"].get("body_html"):
+        d = results["newsletter_draft"]
+        if d.get("status") == "❌":
+            newsletter_draft_html = f"""
+    <div class="card" style="border-left:3px solid #EF9F27">
+      <p class="section-title">Newsletter draft — generation failed</p>
+      <p style="margin:0;font-size:12px;color:#9CA3AF">{html.escape(str(d.get('subject', '')))[:300]}</p>
+    </div>"""
+        else:
+            subject_escaped = html.escape(str(d["subject"]))
+            body_escaped = html.escape(str(d["body_html"]))
+            newsletter_draft_html = f"""
+    <div class="card" style="border-left:3px solid #378ADD">
+      <p class="section-title">Newsletter draft (paste into Beehiiv — 30 sec)</p>
+      <p style="font-size:14px;font-weight:500;margin:0 0 12px;color:#0F1117">Subject: {subject_escaped}</p>
+      <p style="font-size:11px;color:#6B7280;margin:0 0 8px">Body HTML (copy raw, paste into Beehiiv's HTML editor):</p>
+      <pre style="background:#F4F6FA;padding:14px;border-radius:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;color:#0F1117;margin:0">{body_escaped}</pre>
+      <a href="https://app.beehiiv.com" style="font-size:12px;color:#378ADD;text-decoration:none;display:block;margin-top:12px">Open Beehiiv ↗</a>
     </div>"""
 
     # Indie Hackers draft (Mondays only — paste-ready for the user)
@@ -605,6 +596,7 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
   </div>
 
   {published_today_html}
+  {newsletter_draft_html}
   {ih_draft_html}
 
   <div class="card">
@@ -959,20 +951,19 @@ def daily_job():
 
             time.sleep(3)
 
-        if is_monday and HAS_NEWSLETTER and already_done_today(state, today, "newsletter"):
-            print(f"  Newsletter: ⏭  already sent today, skipping")
+        if is_monday and HAS_NEWSLETTER and already_done_today(state, today, "newsletter_draft"):
+            print(f"  Newsletter draft: ⏭  already drafted today, skipping")
         elif is_monday and HAS_NEWSLETTER:
             try:
                 c = generate_content(week, "newsletter", state)
                 angle = c.pop("_angle", "")
-                post_newsletter(c)
-                results["newsletter"] = {"status": "✅", "subject": c["subject"]}
-                state["posts_made"].append({"platform": "newsletter", "angle": angle, "subject": c["subject"], "week": week, "date": str(today)})
+                results["newsletter_draft"] = {"status": "📝", "subject": c["subject"], "body_html": c["body_html"], "angle": angle}
+                state["posts_made"].append({"platform": "newsletter_draft", "angle": angle, "subject": c["subject"], "week": week, "date": str(today)})
                 state.setdefault("recent_angles", []).append(angle)
-                print(f"  Newsletter: ✅ \"{c['subject']}\" [{angle}]")
+                print(f"  Newsletter draft: 📝 \"{c['subject']}\" [{angle}]")
             except Exception as e:
-                results["newsletter"] = {"status": "❌", "subject": str(e)}
-                print(f"  Newsletter: ❌ {e}")
+                results["newsletter_draft"] = {"status": "❌", "subject": str(e), "body_html": ""}
+                print(f"  Newsletter draft: ❌ {e}")
 
         if is_monday and already_done_today(state, today, "ih_draft"):
             print(f"  Indie Hackers draft: ⏭  already drafted today, skipping")
