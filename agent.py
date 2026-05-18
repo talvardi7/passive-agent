@@ -31,6 +31,8 @@ GUMROAD_PRODUCT_ID   = os.environ.get("GUMROAD_PRODUCT_ID", "nhltvo")
 GUMROAD_PRODUCT_URL  = os.environ.get("GUMROAD_PRODUCT_URL", f"https://gumroad.com/l/nhltvo")
 GUMROAD_PRODUCT_NAME = os.environ.get("GUMROAD_PRODUCT_NAME", "The AI Leverage Playbook: 50 Prompts & Workflows for Engineers")
 GUMROAD_PRODUCT_PRICE = os.environ.get("GUMROAD_PRODUCT_PRICE", "$19")
+BRAND_NAME           = os.environ.get("BRAND_NAME", "Leverage Notes")
+BRAND_TAGLINE        = os.environ.get("BRAND_TAGLINE", "Practical AI workflows for engineers")
 DEVTO_API_KEY       = os.environ.get("DEVTO_API_KEY", "")
 BEEHIIV_API_KEY     = os.environ.get("BEEHIIV_API_KEY", "")
 BEEHIIV_PUB_ID      = os.environ.get("BEEHIIV_PUBLICATION_ID", "")
@@ -368,13 +370,18 @@ Rules:
 {cta_rules}
 Call submit_devto_article with the result.""",
 
-        "newsletter": f"""Week {week_number}. Newsletter issue for engineers interested in AI productivity.
+        "newsletter": f"""Week {week_number}. Newsletter issue for the "{BRAND_NAME}" publication — {BRAND_TAGLINE}.
 Angle: {angle} ({angle_hint}).
 Avoid these recent subjects: {previous_titles}
 
 Rules:
-- Subject: specific, under 50 chars.
-- Body: 400-600 words HTML, one concrete framework, 2-3 copy-paste prompt examples in <pre><code> blocks.
+- Subject: specific, under 50 chars. Do NOT include the brand name in the subject (it appears in Beehiiv's "from" field already).
+- Body: 400-600 words HTML.
+- Body MUST start with a brand masthead block (small text, not a big logo):
+    <p style="font-size:13px;color:#6B7280;margin:0 0 4px;letter-spacing:0.04em;text-transform:uppercase">{BRAND_NAME} · Week {week_number}</p>
+    <p style="font-size:12px;color:#9CA3AF;margin:0 0 20px">{BRAND_TAGLINE}</p>
+  Then the H1 title, then the body content.
+- Include one concrete framework and 2-3 copy-paste prompt examples in <pre><code> blocks.
 - End CTA: last paragraph as <p>, 2-3 sentences, declarative, with the link as an <a href> tag. Link: {newsletter_url}
 
 {cta_rules}
@@ -711,13 +718,13 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
   {articles_html}
   {newsletter_html}
 
-  <p class="footer">Next report tomorrow at 09:00 UTC · Nothing for you to do · talvardi7@gmail.com</p>
+  <p class="footer">{BRAND_NAME} · Next report tomorrow at 09:00 UTC · Nothing for you to do</p>
 </body>
 </html>"""
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"{subject_prefix}${total_rev:.0f} total · {gumroad['sales_count']} sales · {devto['total_views']:,} views — {today}"
-    msg["From"] = f"Passive Agent <{SMTP_EMAIL}>"
+    msg["Subject"] = f"{subject_prefix}{BRAND_NAME} · ${total_rev:.0f} · {gumroad['sales_count']} sales · {devto['total_views']:,} views — {today}"
+    msg["From"] = f"{BRAND_NAME} <{SMTP_EMAIL}>"
     msg["To"] = REPORT_EMAIL
     msg.attach(MIMEText(email_html, "html"))
 
@@ -835,7 +842,7 @@ def send_etsy_report(state, etsy_results):
     # Mixed multipart so we can attach the generated images alongside the HTML.
     msg = MIMEMultipart("mixed")
     msg["Subject"] = f"🛍️ Etsy · {summary_line} · {today}"
-    msg["From"] = f"Passive Agent <{SMTP_EMAIL}>"
+    msg["From"] = f"{BRAND_NAME} <{SMTP_EMAIL}>"
     msg["To"] = REPORT_EMAIL
 
     # The HTML body itself goes in an "alternative" sub-part so email clients
@@ -1068,7 +1075,7 @@ def daily_job():
 # ── ENTRY POINT ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("🤖 Passive Income Agent")
+    print(f"🤖 {BRAND_NAME} — passive income agent")
     print(f"   DEV.to:     {'✅' if HAS_DEVTO else '⏭️ '}")
     print(f"   Hacker News:{'✅' if HAS_HN else '⏭️ '}")
     print(f"   Newsletter: {'✅' if HAS_NEWSLETTER else '⏭️ '}")
