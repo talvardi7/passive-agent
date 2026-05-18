@@ -41,6 +41,11 @@ SMTP_EMAIL          = os.environ.get("SMTP_EMAIL", "talvardi7@gmail.com")
 SMTP_PASSWORD       = os.environ.get("SMTP_APP_PASSWORD", "")
 HN_USERNAME         = os.environ.get("HN_USERNAME", "")
 HN_PASSWORD         = os.environ.get("HN_PASSWORD", "")
+# HN auto-submission default-off as of 2026-05-18. HN moderator confirmed
+# dev.to is domain-banned on HN ("too many low-quality posts / promotional
+# behavior"). Re-enable by setting HN_ENABLED=true on Render once we're
+# submitting URLs from a non-banned platform (Hashnode, own domain, etc.).
+HN_ENABLED          = os.environ.get("HN_ENABLED", "false").lower() == "true"
 
 HAS_DEVTO      = DEVTO_API_KEY not in ("", "FILL_IN_LATER")
 HAS_NEWSLETTER = BEEHIIV_API_KEY not in ("", "FILL_IN_LATER")
@@ -995,7 +1000,9 @@ def daily_job():
 
         time.sleep(3)
 
-        if HAS_HN and already_done_today(state, today, "hackernews"):
+        if HAS_HN and not HN_ENABLED:
+            print(f"  Hacker News: ⏸  disabled (HN_ENABLED=false). dev.to is domain-banned on HN; flip to true once submitting from a non-banned URL.")
+        elif HAS_HN and already_done_today(state, today, "hackernews"):
             print(f"  Hacker News: ⏭  already submitted today, skipping")
         elif HAS_HN and results.get("devto", {}).get("status") == "✅" and results["devto"].get("url"):
             try:
@@ -1077,7 +1084,7 @@ def daily_job():
 if __name__ == "__main__":
     print(f"🤖 {BRAND_NAME} — passive income agent")
     print(f"   DEV.to:     {'✅' if HAS_DEVTO else '⏭️ '}")
-    print(f"   Hacker News:{'✅' if HAS_HN else '⏭️ '}")
+    print(f"   Hacker News:{'✅' if HAS_HN and HN_ENABLED else ('⏸  (disabled — dev.to is banned on HN)' if HAS_HN else '⏭️ ')}")
     print(f"   Newsletter: {'✅' if HAS_NEWSLETTER else '⏭️ '}")
     print(f"   Email:      {'✅' if HAS_EMAIL else '⏭️ '}")
     print(f"   Reporting:  {REPORT_EMAIL}")
