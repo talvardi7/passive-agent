@@ -25,10 +25,12 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 sys.stdout.reconfigure(line_buffering=True)
 
 # ── CONFIG ───────────────────────────────────────────────────────────────────
-ANTHROPIC_API_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
-GUMROAD_TOKEN       = os.environ.get("GUMROAD_ACCESS_TOKEN", "")
-GUMROAD_PRODUCT_ID  = os.environ.get("GUMROAD_PRODUCT_ID", "nhltvo")
-GUMROAD_PRODUCT_URL = os.environ.get("GUMROAD_PRODUCT_URL", f"https://gumroad.com/l/nhltvo")
+ANTHROPIC_API_KEY    = os.environ.get("ANTHROPIC_API_KEY", "")
+GUMROAD_TOKEN        = os.environ.get("GUMROAD_ACCESS_TOKEN", "")
+GUMROAD_PRODUCT_ID   = os.environ.get("GUMROAD_PRODUCT_ID", "nhltvo")
+GUMROAD_PRODUCT_URL  = os.environ.get("GUMROAD_PRODUCT_URL", f"https://gumroad.com/l/nhltvo")
+GUMROAD_PRODUCT_NAME = os.environ.get("GUMROAD_PRODUCT_NAME", "The AI Leverage Playbook: 50 Prompts & Workflows for Engineers")
+GUMROAD_PRODUCT_PRICE = os.environ.get("GUMROAD_PRODUCT_PRICE", "$19")
 DEVTO_API_KEY       = os.environ.get("DEVTO_API_KEY", "")
 BEEHIIV_API_KEY     = os.environ.get("BEEHIIV_API_KEY", "")
 BEEHIIV_PUB_ID      = os.environ.get("BEEHIIV_PUBLICATION_ID", "")
@@ -65,6 +67,13 @@ DEVTO_TAGS_ROTATION = [
 
 ANGLES = ["tutorial", "opinion", "case_study", "tip_list", "story"]
 PUBLISH_DAYS = {0: "monday", 2: "wednesday", 4: "friday"}
+
+
+def tracked_url(campaign, source="devto"):
+    """Append UTM parameters so we can see in Gumroad analytics which channel
+    and which post produced a click. campaign is typically '<format>_<week>'."""
+    sep = "&" if "?" in GUMROAD_PRODUCT_URL else "?"
+    return f"{GUMROAD_PRODUCT_URL}{sep}utm_source={source}&utm_medium=article&utm_campaign={campaign}"
 
 # ── STATE ────────────────────────────────────────────────────────────────────
 
@@ -285,61 +294,103 @@ def generate_content(week_number, format_key, state):
     }
     angle_hint = angle_hints[angle]
 
+    # Tracked URLs — one per format, so Gumroad analytics shows which channel
+    # produced the click. utm_campaign embeds format + week.
+    devto_long_url    = tracked_url(f"long_w{week_number}",    source="devto")
+    devto_medium_url  = tracked_url(f"medium_w{week_number}",  source="devto")
+    devto_roundup_url = tracked_url(f"roundup_w{week_number}", source="devto")
+    newsletter_url    = tracked_url(f"newsletter_w{week_number}", source="newsletter")
+    ih_url            = tracked_url(f"ih_w{week_number}",      source="indiehackers")
+
+    # Reusable CTA-style guidance the model can drop in at the end (and once
+    # mid-article for long-form). Declarative, names the product, names the
+    # price, names the workflow categories. NO "if you want" framing.
+    cta_rules = f"""CTA RULES — important, the previous CTAs were too soft.
+- Product name (use it verbatim): "{GUMROAD_PRODUCT_NAME}"
+- Price: {GUMROAD_PRODUCT_PRICE}
+- What's inside: 50 prompts across code review, debugging, refactoring, sprint planning, ADRs, and test design
+- Voice: declarative, peer-to-peer. NEVER use "if you want" / "if this resonates" / "in case it's helpful". Those signal low confidence and kill conversion.
+- Bad CTA (do NOT do this): "If you want to go deeper, I put together a prompt playbook — you can find it here."
+- Good CTA: "The full set is in {GUMROAD_PRODUCT_NAME} — 50 prompts across code review, debugging, refactor, and sprint planning. {GUMROAD_PRODUCT_PRICE} at LINK."
+- The end CTA should be 2-3 sentences max, last paragraph of the article.
+"""
+
     system = (
         "You are a senior software engineer writing for a technical audience. "
         "Write posts that are genuinely useful — concrete, specific, actionable. "
-        "Never sound like marketing. Mention the product naturally at the end only. "
+        "The body should never sound like marketing. The end CTA is allowed to be direct and confident — "
+        "treat it like recommending a tool to a colleague, not pitching a product. "
         "Vary topic and angle. Use the provided tool to return your output."
     )
 
     prompts = {
         "devto_long": f"""Week {week_number} — Monday long-form DEV.to article on using AI for engineering productivity.
 Angle: {angle} ({angle_hint}).
-Product to mention at end: {GUMROAD_PRODUCT_URL}
 Use these DEV.to tags: {tags}
 Do NOT repeat or rephrase any of these previous titles: {previous_titles}
-Rules: title specific and useful (e.g. "The 5 AI prompts I use before every code review"),
-body 500-800 words markdown, include 1-2 concrete copy-paste prompt examples,
-end with one soft sentence mentioning "a prompt playbook I put together" with the link,
-tone: practitioner to peers.
+
+Rules:
+- Title: specific and useful (e.g. "The 5 AI prompts I use before every code review"). No hype, no clickbait.
+- Body: 500-800 words markdown. Include 1-2 concrete copy-paste prompt examples in code blocks.
+- Include ONE mid-article soft mention: somewhere around the 60-70% point of the article (after introducing the main technique), add a one-line aside like "This pattern is one of the ones I've packaged into {GUMROAD_PRODUCT_NAME} — but the version below is enough to get value on its own." Then immediately keep teaching. The aside must NOT include a link — the link only appears in the end CTA.
+- End CTA: last paragraph, 2-3 sentences, declarative. Link: {devto_long_url}
+- Tone: practitioner to peers.
+
+{cta_rules}
 Call submit_devto_article with the result.""",
 
         "devto_medium": f"""Week {week_number} — Wednesday mid-length DEV.to piece. Different topic and angle from Monday.
 Angle: {angle} ({angle_hint}).
-Product: {GUMROAD_PRODUCT_URL}
 Use these DEV.to tags: {tags}
 Do NOT repeat or rephrase any of these recent titles: {previous_titles}
-Rules: title sharp and specific, body 300-500 words markdown, one concrete prompt or workflow example,
-soft mention of the playbook link at the end. Tone: peer-to-peer, no fluff.
+
+Rules:
+- Title: sharp and specific.
+- Body: 300-500 words markdown, one concrete prompt or workflow example.
+- End CTA: last paragraph, 2-3 sentences, declarative. Link: {devto_medium_url}
+- Tone: peer-to-peer, no fluff. No mid-article mention (article is too short).
+
+{cta_rules}
 Call submit_devto_article with the result.""",
 
         "devto_roundup": f"""Week {week_number} — Friday weekly roundup DEV.to post.
 This week you've already published these articles: {weekly_titles or '[none yet]'}
 Angle: {angle} ({angle_hint}).
-Product: {GUMROAD_PRODUCT_URL}
 Use these DEV.to tags: {tags}
 Avoid these recent titles: {previous_titles}
-Rules: title like "What I learned about AI workflows this week" or "3 things that worked, 1 that didn't",
-body 250-400 words markdown that ties together the week's themes (reference your own articles by topic, not by linking),
-soft playbook mention at the end. Casual reflective tone.
+
+Rules:
+- Title: e.g. "What I learned about AI workflows this week" or "3 things that worked, 1 that didn't".
+- Body: 250-400 words markdown that ties together the week's themes (reference your own articles by topic, not by linking).
+- End CTA: last paragraph, 2-3 sentences, declarative. Link: {devto_roundup_url}
+- Tone: casual, reflective. No mid-article mention.
+
+{cta_rules}
 Call submit_devto_article with the result.""",
 
         "newsletter": f"""Week {week_number}. Newsletter issue for engineers interested in AI productivity.
 Angle: {angle} ({angle_hint}).
-Product link: {GUMROAD_PRODUCT_URL}
 Avoid these recent subjects: {previous_titles}
-Rules: subject specific and under 50 chars, 400-600 words HTML,
-one concrete framework, 2-3 copy-paste prompt examples, soft product mention at end.
+
+Rules:
+- Subject: specific, under 50 chars.
+- Body: 400-600 words HTML, one concrete framework, 2-3 copy-paste prompt examples in <pre><code> blocks.
+- End CTA: last paragraph as <p>, 2-3 sentences, declarative, with the link as an <a href> tag. Link: {newsletter_url}
+
+{cta_rules}
 Call submit_newsletter with the result.""",
 
         "ih_draft": f"""Week {week_number} — Indie Hackers post draft (the user will paste this manually).
 Voice: builder talking to other builders. First-person, conversational, specific numbers, no hype.
 Angle: {angle} ({angle_hint}).
-Product: {GUMROAD_PRODUCT_URL}
 Avoid these recent titles: {previous_titles}
-Rules: title under 70 chars (something like "Week N: what I shipped + what I'm learning"),
-body 200-400 words markdown about something concrete you built/tried/learned this week,
-end with a soft one-line mention of the playbook link only.
+
+Rules:
+- Title: under 70 chars (e.g. "Week N: what I shipped + what I'm learning").
+- Body: 200-400 words markdown about something concrete you built/tried/learned this week.
+- End CTA: last paragraph, 2-3 sentences, declarative. Link: {ih_url}
+
+{cta_rules}
 Call submit_ih_draft with the result."""
     }
 
