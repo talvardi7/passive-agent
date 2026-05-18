@@ -379,15 +379,23 @@ Call submit_devto_article with the result.""",
 Angle: {angle} ({angle_hint}).
 Avoid these recent subjects: {previous_titles}
 
+OUTPUT FORMAT — IMPORTANT: PLAIN TEXT ONLY. No HTML tags. No markdown syntax (no #, no **, no `, no [](), no ---). The body will be pasted directly into Beehiiv's visual editor, which renders plain text as paragraphs and does NOT interpret HTML or markdown.
+
 Rules:
-- Subject: specific, under 50 chars. Do NOT include the brand name in the subject (it appears in Beehiiv's "from" field already).
-- Body: 400-600 words HTML.
-- Body MUST start with a brand masthead block (small text, not a big logo):
-    <p style="font-size:13px;color:#6B7280;margin:0 0 4px;letter-spacing:0.04em;text-transform:uppercase">{BRAND_NAME} · Week {week_number}</p>
-    <p style="font-size:12px;color:#9CA3AF;margin:0 0 20px">{BRAND_TAGLINE}</p>
-  Then the H1 title, then the body content.
-- Include one concrete framework and 2-3 copy-paste prompt examples in <pre><code> blocks.
-- End CTA: last paragraph as <p>, 2-3 sentences, declarative, with the link as an <a href> tag. Link: {newsletter_url}
+- Subject: specific, under 50 chars. Do NOT include the brand name in the subject (it shows up in Beehiiv's "from" field already).
+- Body: 400-600 words of plain text.
+- Body MUST start with these three lines, in order, separated by single newlines:
+    Line 1: {BRAND_NAME} · Week {week_number}
+    Line 2: {BRAND_TAGLINE}
+    Line 3: (blank)
+- After the masthead: the article title on its own line, then a blank line, then the body paragraphs.
+- Paragraphs separated by ONE blank line (\\n\\n).
+- For lists: each item on its own line starting with "- " (hyphen + space). No markdown bullets, no nested lists.
+- For section headings: heading on its own line, blank line before and after. Capitalize the heading like a proper title (e.g., "The SCOPE Framework", "Step 1 — Dump the Situation"). Do not use #.
+- For prompt/code examples: introduce with a sentence (e.g., "Here's the prompt I use:"), then a blank line, then the prompt on its own. Do not use code fences or backticks.
+- End CTA: last 2-3 sentences as a single paragraph, declarative. Include the full URL as plain text (no markdown link syntax). Link: {newsletter_url}
+
+The body field is called body_html for legacy compatibility — but put PLAIN TEXT in it, not HTML.
 
 {cta_rules}
 Call submit_newsletter with the result.""",
@@ -613,6 +621,24 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
       <a href="https://app.beehiiv.com" style="font-size:12px;color:#378ADD;text-decoration:none;display:block;margin-top:12px">Open Beehiiv ↗</a>
     </div>"""
 
+    # Medium cross-post hint (Mondays only, when DEV.to publish succeeded).
+    # We can't auto-post (Medium retired the API for new accounts), but Medium's
+    # /p/import tool turns this into a ~30s manual step that preserves formatting
+    # and auto-sets the canonical URL back to DEV.to.
+    medium_crosspost_html = ""
+    if is_monday and results.get("devto") and results["devto"].get("status") == "✅" and results["devto"].get("url"):
+        devto_url = results["devto"]["url"]
+        medium_crosspost_html = f"""
+    <div class="card" style="border-left:3px solid #1D9E75">
+      <p class="section-title">Cross-post to Medium (30 sec)</p>
+      <ol style="margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:#374151">
+        <li>Open <a href="https://medium.com/p/import" style="color:#378ADD;text-decoration:none">medium.com/p/import</a></li>
+        <li>Paste this URL: <code style="background:#F4F6FA;padding:2px 6px;border-radius:3px;font-size:12px;word-break:break-all">{html.escape(devto_url)}</code></li>
+        <li>Click <b>Import</b> → review the preview → <b>Publish</b></li>
+      </ol>
+      <p style="font-size:11px;color:#9CA3AF;margin:12px 0 0">Medium auto-sets the canonical URL back to DEV.to — no SEO penalty for duplicate content.</p>
+    </div>"""
+
     # Indie Hackers draft (Mondays only — paste-ready for the user)
     ih_draft_html = ""
     if is_monday and results.get("ih_draft") and results["ih_draft"].get("body"):
@@ -660,6 +686,7 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
 
   {published_today_html}
   {newsletter_draft_html}
+  {medium_crosspost_html}
   {ih_draft_html}
 
   <div class="card">
