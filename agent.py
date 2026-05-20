@@ -20,6 +20,12 @@ except Exception as _e:
     process_etsy_queue = None
     print(f"  (etsy_agent unavailable: {_e})")
 
+try:
+    import blog
+except Exception as _e:
+    blog = None
+    print(f"  (blog module unavailable: {_e})")
+
 # Force unbuffered output so Render logs show everything in real time
 os.environ["PYTHONUNBUFFERED"] = "1"
 sys.stdout.reconfigure(line_buffering=True)
@@ -1021,22 +1027,42 @@ def daily_job():
                 state["posts_made"].append({"platform": "devto", "format": devto_format, "angle": angle, "title": c["title"], "url": url, "week": week, "date": str(today)})
                 state.setdefault("recent_angles", []).append(angle)
                 print(f"  DEV.to: ✅ \"{c['title']}\" [{angle}]")
+
+                # Mirror to our own GitHub Pages blog (non-banned, HN-submittable
+                # domain). Reuses DEV.to's rendered body_html. Best-effort: a blog
+                # failure must not break the DEV.to success we already recorded.
+                if blog is not None and blog.HAS_BLOG:
+                    try:
+                        body_html = resp.get("body_html", "") or c.get("body_markdown", "")
+                        slug, blog_url = blog.publish_article(c["title"], body_html, str(today))
+                        results["devto"]["blog_url"] = blog_url
+                        state.setdefault("blog_posts", []).append({"title": c["title"], "slug": slug, "date": str(today)})
+                        blog.update_index(state["blog_posts"])
+                        print(f"  Blog: ✅ {blog_url}")
+                    except Exception as be:
+                        print(f"  Blog: ❌ {be}")
             except Exception as e:
                 results["devto"] = {"status": "❌", "title": str(e), "url": "", "format": devto_format}
                 print(f"  DEV.to: ❌ {e}")
 
         time.sleep(3)
 
+        # HN submits the BLOG url, never the dev.to url (dev.to is domain-banned
+        # on HN). If there's no blog url for today, we skip rather than submit a
+        # banned link.
+        hn_target_url = results.get("devto", {}).get("blog_url")
         if HAS_HN and not HN_ENABLED:
-            print(f"  Hacker News: ⏸  disabled (HN_ENABLED=false). dev.to is domain-banned on HN; flip to true once submitting from a non-banned URL.")
+            print(f"  Hacker News: ⏸  disabled (HN_ENABLED=false). Flip to true once the blog is live on its custom domain.")
+        elif HAS_HN and not hn_target_url:
+            print(f"  Hacker News: ⏭  no blog URL for today; skipping (dev.to is domain-banned on HN, won't submit it)")
         elif HAS_HN and already_done_today(state, today, "hackernews"):
             print(f"  Hacker News: ⏭  already submitted today, skipping")
-        elif HAS_HN and results.get("devto", {}).get("status") == "✅" and results["devto"].get("url"):
+        elif HAS_HN:
             try:
-                hn_resp = post_to_hackernews(results["devto"]["title"], results["devto"]["url"])
+                hn_resp = post_to_hackernews(results["devto"]["title"], hn_target_url)
                 results["hn"] = {"status": "✅", "title": results["devto"]["title"], "url": hn_resp["hn_url"]}
-                state["posts_made"].append({"platform": "hackernews", "title": results["devto"]["title"], "url": results["devto"]["url"], "week": week, "date": str(today)})
-                print(f"  Hacker News: ✅ submitted \"{results['devto']['title']}\"")
+                state["posts_made"].append({"platform": "hackernews", "title": results["devto"]["title"], "url": hn_target_url, "week": week, "date": str(today)})
+                print(f"  Hacker News: ✅ submitted \"{results['devto']['title']}\" ({hn_target_url})")
             except Exception as e:
                 results["hn"] = {"status": "❌", "title": str(e), "url": ""}
                 print(f"  Hacker News: ❌ {e}")
