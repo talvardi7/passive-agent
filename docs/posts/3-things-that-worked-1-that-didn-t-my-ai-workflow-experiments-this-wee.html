@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3 things that worked, 1 that didn&#x27;t — my AI workflow experiments this week — The AI Leverage Weekly</title>
+  <style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, 'Times New Roman', serif; max-width: 680px; margin: 0 auto;
+         color: #1a1a1a; line-height: 1.7; padding: 32px 20px 64px; background: #fff; }
+  a { color: #4f46e5; }
+  .masthead { border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 32px; }
+  .masthead .brand { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+                     color: #6b7280; text-decoration: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .masthead .tagline { font-size: 12px; color: #9ca3af; margin-top: 2px;
+                       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  h1 { font-size: 30px; line-height: 1.25; margin: 0 0 8px; }
+  .post-date { font-size: 13px; color: #9ca3af; margin-bottom: 28px;
+               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .post-body h2 { font-size: 21px; margin-top: 32px; }
+  .post-body pre { background: #f4f4f4; border-left: 3px solid #4f46e5; padding: 14px 16px;
+                   overflow-x: auto; border-radius: 4px; font-size: 14px;
+                   font-family: ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; }
+  .post-body code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; }
+  .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid #e5e7eb;
+            font-size: 14px; color: #6b7280;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .post-list { list-style: none; padding: 0; }
+  .post-list li { padding: 16px 0; border-bottom: 1px solid #f0f0f0; }
+  .post-list a { font-size: 19px; text-decoration: none; font-weight: 600; }
+  .post-list .date { display: block; font-size: 13px; color: #9ca3af; margin-top: 4px;
+                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+</style>
+</head>
+<body>
+  <div class="masthead">
+    <a class="brand" href="/">The AI Leverage Weekly</a>
+    <div class="tagline">Practical AI workflows for engineers</div>
+  </div>
+  <article>
+    <h1>3 things that worked, 1 that didn&#x27;t — my AI workflow experiments this week</h1>
+    <div class="post-date">2026-05-08</div>
+    <div class="post-body"><p>Happy Friday. Week 0 of doing these roundups publicly. Let's see how it goes.</p>
+
+<p>This week was mostly about figuring out <em>where</em> AI actually saves time in an engineering workflow versus where it just creates a convincing illusion of speed. Here's the honest tally.</p>
+
+
+<hr>
+
+<h2>
+  <a name="what-worked" href="#what-worked">
+  </a>
+  ✅ What worked
+</h2>
+
+<p><strong>1. Using AI for the first draft of boilerplate, not the logic.</strong><br>
+Generating scaffold code — config files, test stubs, README sections — is where I stopped fighting the output and started trusting it. The model doesn't need to understand your domain to write a <code>Dockerfile</code> or a <code>pytest</code> fixture skeleton. Ship the boring stuff fast, think harder on the real problems.</p>
+
+<p><strong>2. Prompt iteration as a debugging loop.</strong><br>
+Treating a bad AI output like a failing test — rather than a reason to give up — changed everything. Reframe, constrain, give an example. Three rounds of that usually gets you somewhere useful. The mental model shift is: <em>you're not asking, you're specifying.</em></p>
+
+<p><strong>3. Writing documentation before the code.</strong><br>
+Sounds backwards but it works. Describe the function in plain English, hand it to the model, get a first implementation back. The doc becomes the spec. You catch ambiguity before it's baked into 200 lines of code.</p>
+
+
+<hr>
+
+<h2>
+  <a name="what-didnt-work" href="#what-didnt-work">
+  </a>
+  ❌ What didn't work
+</h2>
+
+<p><strong>Letting AI "own" a refactor end-to-end.</strong><br>
+I handed off a medium-complexity refactor with minimal checkpoints. The output was locally coherent and globally wrong — it made decisions silently that I would have caught immediately if I'd stayed in the loop. The lesson: keep the AI in a copilot seat, not the driver's seat, any time the task spans more than one file or abstraction layer.</p>
+
+
+<hr>
+
+<h2>
+  <a name="the-thread-underneath-all-of-this" href="#the-thread-underneath-all-of-this">
+  </a>
+  The thread underneath all of this
+</h2>
+
+<p>Every win this week came from having a clearer mental model of the task <em>before</em> touching the AI. Every loss came from outsourcing the thinking. That's probably the pattern for a while.</p>
+
+
+<hr>
+
+<p>If you want a structured version of these ideas — prompts, workflows, and checklists organized into a repeatable system — I've been packaging what actually works into a playbook: <a href="https://gumroad.com/l/nhltvo" target="_blank" rel="noopener noreferrer">grab it here</a>. No fluff, just the stuff I'd send a teammate.</p>
+
+<p>See you next Friday. 🖤</p>
+
+</div>
+  </article>
+  <div class="footer">
+    <a href="/">&larr; All posts</a> &middot; <a href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe to the newsletter</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to Use AI as a Rubber Duck That Actually Pushes Back — The AI Leverage Weekly</title>
+  <style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, 'Times New Roman', serif; max-width: 680px; margin: 0 auto;
+         color: #1a1a1a; line-height: 1.7; padding: 32px 20px 64px; background: #fff; }
+  a { color: #4f46e5; }
+  .masthead { border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 32px; }
+  .masthead .brand { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+                     color: #6b7280; text-decoration: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .masthead .tagline { font-size: 12px; color: #9ca3af; margin-top: 2px;
+                       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  h1 { font-size: 30px; line-height: 1.25; margin: 0 0 8px; }
+  .post-date { font-size: 13px; color: #9ca3af; margin-bottom: 28px;
+               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .post-body h2 { font-size: 21px; margin-top: 32px; }
+  .post-body pre { background: #f4f4f4; border-left: 3px solid #4f46e5; padding: 14px 16px;
+                   overflow-x: auto; border-radius: 4px; font-size: 14px;
+                   font-family: ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; }
+  .post-body code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; }
+  .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid #e5e7eb;
+            font-size: 14px; color: #6b7280;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .post-list { list-style: none; padding: 0; }
+  .post-list li { padding: 16px 0; border-bottom: 1px solid #f0f0f0; }
+  .post-list a { font-size: 19px; text-decoration: none; font-weight: 600; }
+  .post-list .date { display: block; font-size: 13px; color: #9ca3af; margin-top: 4px;
+                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+</style>
+</head>
+<body>
+  <div class="masthead">
+    <a class="brand" href="/">The AI Leverage Weekly</a>
+    <div class="tagline">Practical AI workflows for engineers</div>
+  </div>
+  <article>
+    <h1>How to Use AI as a Rubber Duck That Actually Pushes Back</h1>
+    <div class="post-date">2026-05-07</div>
+    <div class="post-body"><p>Rubber duck debugging works because explaining a problem forces you to think clearly. AI can do the same thing — but better, because it asks follow-up questions.</p>
+
+<p>Here's a workflow I use when I'm stuck on a design decision or a gnarly bug. Takes about 10 minutes and consistently gets me unstuck.</p>
+
+
+<hr>
+
+<h2>
+  <a name="step-1-dump-your-context-not-your-question" href="#step-1-dump-your-context-not-your-question">
+  </a>
+  Step 1: Dump your context, not your question
+</h2>
+
+<p>Most people open ChatGPT and ask "how do I fix X?" That's too narrow. Instead, give full context first:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>I'm working on [system/feature]. Here's what I'm trying to accomplish: [goal].
+Here's what I've tried: [approach 1], [approach 2].
+Here's where I'm stuck: [specific blocker].
+Don't give me a solution yet. Ask me clarifying questions until you understand the problem fully.
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>That last line is the key. Forcing the model to interrogate you before answering surfaces assumptions you didn't know you were making.</p>
+
+
+<hr>
+
+<h2>
+  <a name="step-2-answer-its-questions-honestly" href="#step-2-answer-its-questions-honestly">
+  </a>
+  Step 2: Answer its questions honestly
+</h2>
+
+<p>When it asks "what constraints are you working under?" or "what happens if you do X?" — actually answer. Don't shortcut to "just give me the answer." The back-and-forth is the point.</p>
+
+<p>Typically 2–3 rounds of Q&amp;A is enough.</p>
+
+
+<hr>
+
+<h2>
+  <a name="step-3-ask-for-the-devils-advocate-take" href="#step-3-ask-for-the-devils-advocate-take">
+  </a>
+  Step 3: Ask for the devil's advocate take
+</h2>
+
+<p>Once you've landed on a direction, run this:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>Here's the approach I'm leaning toward: [your plan].
+Now argue against it. What are the top 3 reasons this is the wrong call?
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>This is where AI earns its keep. It'll surface edge cases, scalability concerns, or maintenance debt you glossed over. You don't have to agree with all of it — but you should be able to rebut each point.</p>
+
+
+<hr>
+
+<h2>
+  <a name="step-4-synthesize-a-decision-log-entry" href="#step-4-synthesize-a-decision-log-entry">
+  </a>
+  Step 4: Synthesize a decision log entry
+</h2>
+
+<p>End the session with:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>Summarize our conversation as a short architectural decision record (ADR):
+- Context
+- Decision
+- Alternatives considered
+- Consequences
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>Paste that into your PR description or Notion doc. Future-you (and your teammates) will thank you.</p>
+
+
+<hr>
+
+<h2>
+  <a name="why-this-works" href="#why-this-works">
+  </a>
+  Why this works
+</h2>
+
+<p>The standard "explain this to me" prompt treats AI as a search engine. This workflow treats it as a thinking partner with an agenda: to stress-test your reasoning before you commit to it.</p>
+
+<p>The difference in output quality is significant — especially for decisions that are hard to reverse.</p>
+
+
+<hr>
+
+<p>If you want more structured prompts for engineering decisions, code reviews, and career conversations, I put together a playbook of them here: <a href="https://gumroad.com/l/nhltvo" target="_blank" rel="noopener noreferrer">AI Prompt Playbook for Engineers</a>. Practical, copy-paste ready, no filler.</p>
+
+</div>
+  </article>
+  <div class="footer">
+    <a href="/">&larr; All posts</a> &middot; <a href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe to the newsletter</a>
+  </div>
+</body>
+</html>

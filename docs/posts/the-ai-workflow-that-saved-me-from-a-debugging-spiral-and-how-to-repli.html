@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The AI Workflow That Saved Me From a Debugging Spiral (And How to Replicate It) — The AI Leverage Weekly</title>
+  <style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, 'Times New Roman', serif; max-width: 680px; margin: 0 auto;
+         color: #1a1a1a; line-height: 1.7; padding: 32px 20px 64px; background: #fff; }
+  a { color: #4f46e5; }
+  .masthead { border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 32px; }
+  .masthead .brand { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+                     color: #6b7280; text-decoration: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .masthead .tagline { font-size: 12px; color: #9ca3af; margin-top: 2px;
+                       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  h1 { font-size: 30px; line-height: 1.25; margin: 0 0 8px; }
+  .post-date { font-size: 13px; color: #9ca3af; margin-bottom: 28px;
+               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .post-body h2 { font-size: 21px; margin-top: 32px; }
+  .post-body pre { background: #f4f4f4; border-left: 3px solid #4f46e5; padding: 14px 16px;
+                   overflow-x: auto; border-radius: 4px; font-size: 14px;
+                   font-family: ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; }
+  .post-body code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; }
+  .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid #e5e7eb;
+            font-size: 14px; color: #6b7280;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .post-list { list-style: none; padding: 0; }
+  .post-list li { padding: 16px 0; border-bottom: 1px solid #f0f0f0; }
+  .post-list a { font-size: 19px; text-decoration: none; font-weight: 600; }
+  .post-list .date { display: block; font-size: 13px; color: #9ca3af; margin-top: 4px;
+                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+</style>
+</head>
+<body>
+  <div class="masthead">
+    <a class="brand" href="/">The AI Leverage Weekly</a>
+    <div class="tagline">Practical AI workflows for engineers</div>
+  </div>
+  <article>
+    <h1>The AI Workflow That Saved Me From a Debugging Spiral (And How to Replicate It)</h1>
+    <div class="post-date">2026-05-18</div>
+    <div class="post-body"><p>Last quarter I lost a full afternoon to a bug that, in hindsight, took 11 minutes to fix once I changed how I was talking to my AI assistant.</p>
+
+<p>Here's what actually happened.</p>
+
+
+<hr>
+
+<h2>
+  <a name="the-situation" href="#the-situation">
+  </a>
+  The Situation
+</h2>
+
+<p>We were mid-sprint. A new webhook integration kept silently dropping events under specific payload conditions — no exception, no log line, just gone. I'd been staring at the same three files for two hours. The code <em>looked</em> fine. The unit tests passed. My rubber duck was useless.</p>
+
+<p>My first instinct, like most engineers who've been using AI tools for a while, was to paste the function into the chat and ask: <em>"Why isn't this working?"</em></p>
+
+<p>I got back a confident, well-formatted, completely wrong answer. The model explained a race condition that didn't exist in my codebase. I spent another 45 minutes chasing it.</p>
+
+
+<hr>
+
+<h2>
+  <a name="the-problem-with-how-i-was-using-ai" href="#the-problem-with-how-i-was-using-ai">
+  </a>
+  The Problem With How I Was Using AI
+</h2>
+
+<p>The real issue wasn't the tool. It was that I was treating it like a search engine with better grammar. I handed it a decontextualized code block and asked for a conclusion. No wonder it hallucinated one.</p>
+
+<p>When you strip context and ask for answers, you get pattern-matched plausibility — not debugging insight. The model has no idea what <em>should</em> happen. It only knows what the code <em>says</em>.</p>
+
+<p>The fix wasn't a smarter model. It was a smarter prompt.</p>
+
+
+<hr>
+
+<h2>
+  <a name="what-i-tried-and-what-actually-worked" href="#what-i-tried-and-what-actually-worked">
+  </a>
+  What I Tried (and What Actually Worked)
+</h2>
+
+<p>I stopped asking "what's wrong" and started asking the model to <strong>reason out loud about expected vs. actual behavior</strong> — with me supplying both sides.</p>
+
+<p>Here's the exact prompt structure I switched to:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>You are debugging with me, not for me.
+
+Context:
+- What this function is supposed to do: [one sentence]
+- What it's actually doing: [one sentence]
+- What I've already ruled out: [bullet list]
+
+Here is the code:
+[paste]
+
+Do NOT guess at a root cause yet. First, ask me up to 3 clarifying questions that would most change your hypothesis.
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>That last line is the unlock. Instead of getting a confident wrong answer, I got three sharp questions — one of which was: <em>"Does the payload schema validation run before or after the event is queued?"</em></p>
+
+<p>I didn't know. I checked. It ran after. That was the bug. A malformed payload was being queued before validation could reject it, and the queue consumer was silently swallowing the schema error.</p>
+
+<p>Eleven minutes.</p>
+
+
+<hr>
+
+<h2>
+  <a name="a-second-prompt-that-now-lives-in-my-rotation" href="#a-second-prompt-that-now-lives-in-my-rotation">
+  </a>
+  A Second Prompt That Now Lives in My Rotation
+</h2>
+
+<p>The debugging prompt fixed my immediate problem, but I noticed a broader pattern: I was also losing time during code reviews by catching things too late. So I built a pre-review prompt I run before I open a PR:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>Review this code as a senior engineer who is skeptical but fair.
+
+Focus only on:
+1. Logic errors or edge cases I may have missed
+2. Any place where my stated intent and the actual implementation diverge
+3. One thing you'd change if this were your codebase
+
+My intent with this code: [one sentence]
+
+[paste code]
+
+Do not comment on style, naming, or formatting.
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>The constraint at the end matters. Without it, you get four paragraphs about variable naming and one throwaway line about the actual logic bug.</p>
+
+
+<hr>
+
+<h2>
+  <a name="what-changed-after" href="#what-changed-after">
+  </a>
+  What Changed After
+</h2>
+
+<p>I don't use AI less now — I use it differently. The prompts are more structured. I treat the model like a sharp junior engineer who needs good questions more than they need free rein. I give it constraints, context, and a specific job to do.</p>
+
+<p>The productivity gains got real when I stopped optimizing for <em>getting answers</em> and started optimizing for <em>getting the right thinking surface</em>. Sometimes that means asking the model to poke holes. Sometimes it means asking it to steelman a bad approach before I throw it out. Rarely does it mean just dumping code and waiting.</p>
+
+
+<hr>
+
+<h2>
+  <a name="one-more-thing" href="#one-more-thing">
+  </a>
+  One More Thing
+</h2>
+
+<p>These patterns didn't come together overnight. They came from a lot of failed prompts, a lot of confidently-wrong AI answers, and a lot of "wait, why did that work?" moments.</p>
+
+<p>If any of this resonates, I put together a prompt playbook with the full set of patterns I now use across debugging, code review, and architecture decisions — you can grab it at <a href="https://gumroad.com/l/nhltvo" target="_blank" rel="noopener noreferrer">https://gumroad.com/l/nhltvo</a>.</p>
+
+</div>
+  </article>
+  <div class="footer">
+    <a href="/">&larr; All posts</a> &middot; <a href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe to the newsletter</a>
+  </div>
+</body>
+</html>

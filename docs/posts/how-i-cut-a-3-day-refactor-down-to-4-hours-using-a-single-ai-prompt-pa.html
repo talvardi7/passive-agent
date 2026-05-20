@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How I Cut a 3-Day Refactor Down to 4 Hours Using a Single AI Prompt Pattern — The AI Leverage Weekly</title>
+  <style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, 'Times New Roman', serif; max-width: 680px; margin: 0 auto;
+         color: #1a1a1a; line-height: 1.7; padding: 32px 20px 64px; background: #fff; }
+  a { color: #4f46e5; }
+  .masthead { border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 32px; }
+  .masthead .brand { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+                     color: #6b7280; text-decoration: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .masthead .tagline { font-size: 12px; color: #9ca3af; margin-top: 2px;
+                       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  h1 { font-size: 30px; line-height: 1.25; margin: 0 0 8px; }
+  .post-date { font-size: 13px; color: #9ca3af; margin-bottom: 28px;
+               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .post-body h2 { font-size: 21px; margin-top: 32px; }
+  .post-body pre { background: #f4f4f4; border-left: 3px solid #4f46e5; padding: 14px 16px;
+                   overflow-x: auto; border-radius: 4px; font-size: 14px;
+                   font-family: ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; }
+  .post-body code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; }
+  .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid #e5e7eb;
+            font-size: 14px; color: #6b7280;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .post-list { list-style: none; padding: 0; }
+  .post-list li { padding: 16px 0; border-bottom: 1px solid #f0f0f0; }
+  .post-list a { font-size: 19px; text-decoration: none; font-weight: 600; }
+  .post-list .date { display: block; font-size: 13px; color: #9ca3af; margin-top: 4px;
+                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+</style>
+</head>
+<body>
+  <div class="masthead">
+    <a class="brand" href="/">The AI Leverage Weekly</a>
+    <div class="tagline">Practical AI workflows for engineers</div>
+  </div>
+  <article>
+    <h1>How I Cut a 3-Day Refactor Down to 4 Hours Using a Single AI Prompt Pattern</h1>
+    <div class="post-date">2026-05-13</div>
+    <div class="post-body"><h1>
+  <a name="how-i-cut-a-3day-refactor-down-to-4-hours-using-a-single-ai-prompt-pattern" href="#how-i-cut-a-3day-refactor-down-to-4-hours-using-a-single-ai-prompt-pattern">
+  </a>
+  How I Cut a 3-Day Refactor Down to 4 Hours Using a Single AI Prompt Pattern
+</h1>
+
+<p>Last quarter I inherited a 4,000-line Node.js service — no tests, inconsistent error handling, callbacks mixed with promises. My estimate to the team: <strong>3 days minimum</strong>.</p>
+
+<p>I finished in 4 hours. Here's exactly what I did differently.</p>
+
+
+<hr>
+
+<h2>
+  <a name="the-setup" href="#the-setup">
+  </a>
+  The Setup
+</h2>
+
+<p>The service was a payment webhook handler. Spaghetti, but well-defined inputs and outputs — I knew what "correct" looked like. That constraint matters for what came next.</p>
+
+<h2>
+  <a name="the-prompt-pattern-that-changed-the-work" href="#the-prompt-pattern-that-changed-the-work">
+  </a>
+  The Prompt Pattern That Changed the Work
+</h2>
+
+<p>Instead of asking AI to <em>rewrite</em> the file (which produces confident garbage), I used a <strong>constraint-first decomposition prompt</strong>:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>Context: I have a Node.js webhook handler, ~400 lines, mixed callbacks/promises,
+no error boundaries. I cannot change the function signatures — external callers depend on them.
+
+Task: Identify the 5 highest-risk sections I should refactor first, ranked by:
+1. Likelihood of silent failure
+2. How much other code depends on it
+
+For each section, give me: the specific anti-pattern, a one-paragraph explanation of the risk,
+and a before/after snippet using async/await. Do not refactor anything outside those 5 sections.
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>That last line — <em>"do not refactor anything outside those 5 sections"</em> — is the key. It forces the model to act like a scoped reviewer, not an eager rewriter.</p>
+
+<h2>
+  <a name="what-came-out" href="#what-came-out">
+  </a>
+  What Came Out
+</h2>
+
+<p>The model returned five ranked sections with concrete snippets. Two of them I already suspected. <strong>Three I had missed entirely</strong> — one was a <code>.catch()</code> that silently swallowed a database timeout and returned a 200 to Stripe anyway. That bug had been in production for months.</p>
+
+<p>I ran each suggested change independently, verified behavior, committed. No big-bang rewrite. No merge conflict nightmare.</p>
+
+<h2>
+  <a name="the-numbers" href="#the-numbers">
+  </a>
+  The Numbers
+</h2>
+
+<div class="table-wrapper-paragraph"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Estimated time</td>
+<td>3 days</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Actual time</td>
+<td>—</td>
+<td>4 hours</td>
+</tr>
+<tr>
+<td>Test coverage</td>
+<td>0%</td>
+<td>74% (added alongside)</td>
+</tr>
+<tr>
+<td>Silent failure points found</td>
+<td>2 (known)</td>
+<td>5 (3 new)</td>
+</tr>
+</tbody>
+</table></div>
+
+<h2>
+  <a name="what-made-it-work" href="#what-made-it-work">
+  </a>
+  What Made It Work
+</h2>
+
+<ol>
+<li>
+<strong>Constraints in the prompt</strong> — scope prevents hallucinated rewrites</li>
+<li>
+<strong>Explicit ranking criteria</strong> — "likelihood of silent failure" gets better output than "what's bad"</li>
+<li>
+<strong>Incremental commits</strong> — treated each AI suggestion as a PR, not a paste job</li>
+</ol>
+
+<p>The difference isn't the AI. It's the prompting discipline. Most developers throw a file at a model and hope. Giving it a job description with guardrails is a different skill — and it compounds fast once you have a small library of patterns like this one.</p>
+
+
+<hr>
+
+<p>If you want the full set of prompt patterns I've built around legacy code, reviews, and debugging, I've packaged them up here: <a href="https://gumroad.com/l/nhltvo" target="_blank" rel="noopener noreferrer">AI Prompt Playbook for Developers</a>.</p>
+
+</div>
+  </article>
+  <div class="footer">
+    <a href="/">&larr; All posts</a> &middot; <a href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe to the newsletter</a>
+  </div>
+</body>
+</html>
