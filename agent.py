@@ -1119,10 +1119,23 @@ def daily_job():
     save_state(state)
 
     # 4. Send the two daily emails — content lane and Etsy lane separately.
-    if HAS_EMAIL:
+    # Guard against duplicate emails when a redeploy re-runs daily_job on the
+    # same calendar day (the agent's own blog commits push to the repo, which
+    # triggers a Render redeploy). Send at most once per day UNLESS this run
+    # actually published something new.
+    published_new = any(
+        (results.get(k) or {}).get("status") in ("✅", "📝")
+        for k in ("devto", "hn", "newsletter_draft", "ih_draft")
+    )
+    already_emailed_today = state.get("last_report_date") == str(today)
+    if HAS_EMAIL and not published_new and already_emailed_today:
+        print(f"  Email: ⏭  already sent today and nothing new published; skipping duplicate")
+    elif HAS_EMAIL:
         try:
             send_report(state, gumroad, devto_stats, beehiiv_stats,
                         sales_baseline, results, articles, newsletter_posts, weekday)
+            state["last_report_date"] = str(today)
+            save_state(state)
         except Exception as e:
             print(f"  Email: ❌ {e}")
         try:
