@@ -199,32 +199,41 @@ def get_devto_stats():
 
 def get_beehiiv_stats():
     try:
+        # Subscriber count + average open rate come from the publication-level
+        # stats object. The /subscriptions endpoint switched to cursor
+        # pagination and no longer returns `total_results`, so the old code
+        # silently reported 0 subscribers forever. `expand[]=stats` is the
+        # authoritative source.
+        h = {"Authorization": f"Bearer {BEEHIIV_API_KEY}"}
         r = requests.get(
-            f"https://api.beehiiv.com/v2/publications/{BEEHIIV_PUB_ID}/subscriptions",
-            headers={"Authorization": f"Bearer {BEEHIIV_API_KEY}"},
-            params={"limit": 1},
+            f"https://api.beehiiv.com/v2/publications/{BEEHIIV_PUB_ID}",
+            headers=h,
+            params={"expand[]": "stats"},
             timeout=10
         )
         r.raise_for_status()
-        data = r.json()
-        total_subs = data.get("total_results", 0)
+        stats = r.json().get("data", {}).get("stats", {}) or {}
+        total_subs = stats.get("active_subscriptions", 0)
+        open_rate = stats.get("average_open_rate", 0) or 0
 
-        # Get latest post stats
-        posts_r = requests.get(
-            f"https://api.beehiiv.com/v2/publications/{BEEHIIV_PUB_ID}/posts",
-            headers={"Authorization": f"Bearer {BEEHIIV_API_KEY}"},
-            params={"limit": 1, "status": "confirmed"},
-            timeout=10
-        )
-        posts_r.raise_for_status()
-        posts = posts_r.json().get("data", [])
-        latest = posts[0] if posts else {}
-        open_rate = latest.get("stats", {}).get("open_rate", 0)
+        # Count of confirmed (sent) issues — separate call, best-effort.
+        issues_sent = 0
+        try:
+            posts_r = requests.get(
+                f"https://api.beehiiv.com/v2/publications/{BEEHIIV_PUB_ID}/posts",
+                headers=h,
+                params={"limit": 100, "status": "confirmed"},
+                timeout=10
+            )
+            posts_r.raise_for_status()
+            issues_sent = len(posts_r.json().get("data", []))
+        except Exception:
+            pass
 
         return {
             "subscribers": total_subs,
             "open_rate": round(open_rate * 100, 1) if open_rate else 0,
-            "issues_sent": len(posts_r.json().get("data", [])),
+            "issues_sent": issues_sent,
             "ok": True
         }
     except Exception as e:
