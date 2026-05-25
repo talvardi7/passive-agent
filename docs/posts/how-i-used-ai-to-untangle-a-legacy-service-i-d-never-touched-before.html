@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How I Used AI to Untangle a Legacy Service I&#x27;d Never Touched Before — The AI Leverage Weekly</title>
+  <style>
+  :root {
+    --ink: #18181b; --muted: #6b7280; --faint: #9ca3af;
+    --accent: #4f46e5; --accent-dark: #4338ca;
+    --border: #ececf0; --bg: #ffffff; --bg-soft: #f7f7fb;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.6;
+         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  .topbar { height: 4px; background: linear-gradient(90deg, #4f46e5, #7c6cf0); }
+  .container { max-width: 720px; margin: 0 auto; padding: 0 22px; }
+  a { color: var(--accent); }
+
+  .site-header { border-bottom: 1px solid var(--border); }
+  .site-header .container { display: flex; align-items: center; justify-content: space-between;
+                            padding-top: 20px; padding-bottom: 20px; gap: 16px; }
+  .brand { text-decoration: none; color: var(--ink); }
+  .brand b { display: block; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+  .brand span { display: block; font-weight: 400; font-size: 12px; color: var(--faint); margin-top: 1px; }
+  .subscribe-btn { background: var(--accent); color: #fff; text-decoration: none; font-size: 14px;
+                   font-weight: 600; padding: 9px 16px; border-radius: 8px; white-space: nowrap; }
+  .subscribe-btn:hover { background: var(--accent-dark); }
+
+  .hero { padding: 56px 0 8px; }
+  .hero h1 { font-size: 34px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 12px; }
+  .hero p { font-size: 17px; color: var(--muted); margin: 0; max-width: 34em; }
+
+  .posts { list-style: none; padding: 0; margin: 24px 0 0; }
+  .posts li { padding: 26px 0; border-top: 1px solid var(--border); }
+  .posts a.post-link { font-size: 22px; font-weight: 650; line-height: 1.3; letter-spacing: -0.01em;
+                       color: var(--ink); text-decoration: none; }
+  .posts a.post-link:hover { color: var(--accent); }
+  .posts .date { display: block; font-size: 12px; color: var(--faint); margin-top: 8px;
+                 text-transform: uppercase; letter-spacing: 0.05em; }
+
+  article { padding: 44px 0 0; }
+  .back { font-size: 14px; color: var(--muted); text-decoration: none; }
+  .back:hover { color: var(--accent); }
+  article h1 { font-size: 36px; line-height: 1.18; letter-spacing: -0.02em; margin: 22px 0 12px; }
+  .post-meta { font-size: 12px; color: var(--faint); text-transform: uppercase;
+               letter-spacing: 0.05em; margin-bottom: 36px; }
+  .post-body { font-family: Georgia, 'Times New Roman', serif; font-size: 19px; line-height: 1.75; color: #27272a; }
+  .post-body p { margin: 0 0 22px; }
+  .post-body h2 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                  font-size: 25px; letter-spacing: -0.01em; margin: 44px 0 14px; }
+  .post-body h3 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                  font-size: 20px; margin: 32px 0 10px; }
+  .post-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .post-body ul, .post-body ol { padding-left: 24px; margin: 0 0 22px; }
+  .post-body li { margin: 6px 0; }
+  .post-body blockquote { margin: 24px 0; padding: 4px 20px; border-left: 3px solid var(--accent);
+                          color: var(--muted); font-style: italic; }
+  .post-body pre { background: #f6f8fa; border: 1px solid var(--border); border-radius: 8px;
+                   padding: 16px 18px; overflow-x: auto; font-size: 14.5px; line-height: 1.6;
+                   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .post-body code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                    font-size: 0.86em; background: #f1f1f5; padding: 2px 6px; border-radius: 4px; }
+  .post-body pre code { background: none; padding: 0; font-size: inherit; }
+  .post-body img { max-width: 100%; height: auto; border-radius: 8px; }
+
+  .cta { margin: 56px 0 0; padding: 28px; background: var(--bg-soft);
+         border: 1px solid var(--border); border-radius: 12px; text-align: center; }
+  .cta h3 { margin: 0 0 6px; font-size: 19px; }
+  .cta p { margin: 0 0 18px; color: var(--muted); font-size: 15px; }
+
+  .site-footer { margin-top: 64px; border-top: 1px solid var(--border); }
+  .site-footer .container { padding: 26px 22px; font-size: 13px; color: var(--faint);
+                            display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
+  .site-footer a { color: var(--muted); text-decoration: none; }
+  .site-footer a:hover { color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .hero { padding-top: 40px; }
+    .hero h1 { font-size: 28px; }
+    article h1 { font-size: 28px; }
+    .post-body { font-size: 18px; }
+    .posts a.post-link { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar"></div>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="/"><b>The AI Leverage Weekly</b><span>Practical AI workflows for engineers</span></a>
+      <a class="subscribe-btn" href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a>
+    </div>
+  </header>
+  <div class="container">
+    <article>
+      <a class="back" href="/">&larr; All posts</a>
+      <h1>How I Used AI to Untangle a Legacy Service I&#x27;d Never Touched Before</h1>
+      <div class="post-meta">2026-05-25</div>
+      <div class="post-body"><h1>
+  <a name="how-i-used-ai-to-untangle-a-legacy-service-id-never-touched-before" href="#how-i-used-ai-to-untangle-a-legacy-service-id-never-touched-before">
+  </a>
+  How I Used AI to Untangle a Legacy Service I'd Never Touched Before
+</h1>
+
+<p>Three weeks ago I got handed a support escalation involving a service I'd never opened before. It was a Node.js microservice, about four years old, written by two engineers who had both since left the company. No meaningful README. Tests that hadn't run in CI for months. A Slack thread full of "this thing is a black box" going back two years.</p>
+
+<p>The bug was real and customer-facing. I had one day to get a handle on it.</p>
+
+
+<hr>
+
+<h2>
+  <a name="the-situation" href="#the-situation">
+  </a>
+  The Situation
+</h2>
+
+<p>The service sat between our API gateway and a third-party fulfillment provider. Something in the request transformation logic was intermittently dropping fields — but only under a specific combination of request shape and load. The output was wrong. The logs were unhelpful. The code was 3,200 lines across 14 files, and the logic was split between three layers of middleware with no clear separation of concerns.</p>
+
+<p>I've been in this position before. Normally it means a half-day of <code>console.log</code>-driven archaeology before you even have a theory worth testing.</p>
+
+<p>This time I tried something different.</p>
+
+
+<hr>
+
+<h2>
+  <a name="what-i-tried-first-and-why-it-wasnt-enough" href="#what-i-tried-first-and-why-it-wasnt-enough">
+  </a>
+  What I Tried First (And Why It Wasn't Enough)
+</h2>
+
+<p>My first instinct was to paste the main handler into an AI chat and ask "what does this do?" That gave me a surface-level summary — not wrong, but not useful. It told me what the code <em>said</em>, not what it <em>meant</em> in the context of our system.</p>
+
+<p>The problem with treating AI like a reader is that it reads what you give it. If you give it one file without context, it gives you one file's worth of insight.</p>
+
+
+<hr>
+
+<h2>
+  <a name="the-shift-giving-it-a-job-instead-of-a-question" href="#the-shift-giving-it-a-job-instead-of-a-question">
+  </a>
+  The Shift: Giving It a Job Instead of a Question
+</h2>
+
+<p>The prompt pattern that actually unlocked the service for me was treating the AI as a <strong>new engineer joining the team</strong>, not a search engine. I fed it the core files in sequence and gave it a specific role with a specific goal:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>You are a new backend engineer joining this team. I'm going to show you the core files of a legacy microservice one at a time. After each file, update a running list of:
+1. What this file is responsible for
+2. Any assumptions or implicit contracts you can see
+3. Questions you'd want answered before touching this code
+
+Do not summarize the code. Identify the load-bearing logic and flag anything that looks fragile.
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>After three files, it had surfaced something I'd glossed over: a field transformation function that silently returned <code>undefined</code> when the input didn't match an expected shape — no error, no log, just a missing field downstream. That was the bug. It had been in the codebase for four years.</p>
+
+
+<hr>
+
+<h2>
+  <a name="turning-understanding-into-a-fix" href="#turning-understanding-into-a-fix">
+  </a>
+  Turning Understanding Into a Fix
+</h2>
+
+<p>Once I had the theory, I used a second prompt to pressure-test it before writing a single line of fix code:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>Here is the function I believe is causing a silent field drop:
+
+[paste function]
+
+The upstream input looks like this:
+
+[paste example payload]
+
+Walk me through every code path in this function. For each path, tell me what the output would be and whether any field could be silently dropped or coerced to undefined. Flag the path you think is most likely to cause intermittent failures under load.
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>It walked through five code paths, flagged two that could produce <code>undefined</code>, and correctly identified the one tied to our intermittent failure pattern.</p>
+
+<p>This pattern — role-first, file-by-file, output structured as questions not summaries — is one of the ones I've packaged into <em>The AI Leverage Playbook: 50 Prompts &amp; Workflows for Engineers</em> — but the version above is enough to get value on its own.</p>
+
+
+<hr>
+
+<h2>
+  <a name="what-this-looked-like-endtoend" href="#what-this-looked-like-endtoend">
+  </a>
+  What This Looked Like End-to-End
+</h2>
+
+<ul>
+<li>
+<strong>Total time to root cause:</strong> ~90 minutes (vs. my usual half-day minimum for unfamiliar code)</li>
+<li>
+<strong>Files I had to read manually:</strong> 4 out of 14</li>
+<li>
+<strong>Lines of fix code:</strong> 11</li>
+<li>
+<strong>Test I wrote after:</strong> 1 regression test, also AI-assisted</li>
+</ul>
+
+<p>The key wasn't the AI doing the work. It was the AI acting as a structured thinking partner while I retained ownership of the diagnosis. I still had to read the code. I still had to make the call. But I stopped thrashing.</p>
+
+
+<hr>
+
+<h2>
+  <a name="the-takeaway" href="#the-takeaway">
+  </a>
+  The Takeaway
+</h2>
+
+<p>If you're dropped into unfamiliar legacy code, don't ask AI to explain it. Give it a role, feed it files incrementally, and ask it to maintain a running model of the system — including what it <em>doesn't</em> know. That output is far more useful than a summary.</p>
+
+<p>The same pattern works for onboarding onto a new codebase, doing pre-refactor reconnaissance, or writing documentation after the fact.</p>
+
+
+<hr>
+
+<p>The full set of prompts for situations like this — legacy code archaeology, debugging, refactor planning, test design — is in <strong><a href="https://gumroad.com/l/nhltvo?utm_source=devto&amp;utm_medium=article&amp;utm_campaign=long_w3" target="_blank" rel="noopener noreferrer">The AI Leverage Playbook: 50 Prompts &amp; Workflows for Engineers</a></strong>. 50 prompts, $19. It covers code review, debugging, sprint planning, ADRs, and more — organized so you can grab the right prompt for whatever situation you're actually in.</p>
+
+</div>
+      <div class="cta">
+      <h3>Get the next one in your inbox</h3>
+      <p>Practical AI workflows for engineers. One issue a week, no fluff.</p>
+      <a class="subscribe-btn" href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe free</a>
+    </div>
+    </article>
+  </div>
+  <footer class="site-footer">
+    <div class="container">
+      <span>&copy; 2026 The AI Leverage Weekly</span>
+      <span><a href="/">All posts</a> &middot; <a href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a></span>
+    </div>
+  </footer>
+</body>
+</html>
