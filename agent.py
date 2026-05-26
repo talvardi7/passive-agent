@@ -39,6 +39,11 @@ GUMROAD_PRODUCT_NAME = os.environ.get("GUMROAD_PRODUCT_NAME", "The AI Leverage P
 GUMROAD_PRODUCT_PRICE = os.environ.get("GUMROAD_PRODUCT_PRICE", "$19")
 BRAND_NAME           = os.environ.get("BRAND_NAME", "The AI Leverage Weekly")
 BRAND_TAGLINE        = os.environ.get("BRAND_TAGLINE", "Practical AI workflows for engineers")
+# Free newsletter signup page. The PRIMARY call-to-action in cold channels
+# (DEV.to / blog / IH) is now a free subscribe, not a cold $19 sale — the email
+# list is the only asset that compounds, and the warm newsletter is where the
+# paid product is actually sold.
+NEWSLETTER_SUBSCRIBE_URL = os.environ.get("BLOG_SUBSCRIBE_URL", "https://theaileverageweekly.beehiiv.com/subscribe")
 DEVTO_API_KEY       = os.environ.get("DEVTO_API_KEY", "")
 BEEHIIV_API_KEY     = os.environ.get("BEEHIIV_API_KEY", "")
 BEEHIIV_PUB_ID      = os.environ.get("BEEHIIV_PUBLICATION_ID", "")
@@ -87,6 +92,12 @@ def tracked_url(campaign, source="devto"):
     and which post produced a click. campaign is typically '<format>_<week>'."""
     sep = "&" if "?" in GUMROAD_PRODUCT_URL else "?"
     return f"{GUMROAD_PRODUCT_URL}{sep}utm_source={source}&utm_medium=article&utm_campaign={campaign}"
+
+def subscribe_url(campaign, source="devto"):
+    """Newsletter signup URL with UTM params so we can attribute which channel/
+    post drove a subscribe. Mirrors tracked_url but points at the free list."""
+    sep = "&" if "?" in NEWSLETTER_SUBSCRIBE_URL else "?"
+    return f"{NEWSLETTER_SUBSCRIBE_URL}{sep}utm_source={source}&utm_medium=article&utm_campaign={campaign}"
 
 # ── STATE ────────────────────────────────────────────────────────────────────
 
@@ -381,17 +392,33 @@ def generate_content(week_number, format_key, state):
     newsletter_url    = tracked_url(f"newsletter_w{week_number}", source="newsletter")
     ih_url            = tracked_url(f"ih_w{week_number}",      source="indiehackers")
 
-    # Reusable CTA-style guidance the model can drop in at the end (and once
-    # mid-article for long-form). Declarative, names the product, names the
-    # price, names the workflow categories. NO "if you want" framing.
-    cta_rules = f"""CTA RULES — important, the previous CTAs were too soft.
-- Product name (use it verbatim): "{GUMROAD_PRODUCT_NAME}"
-- Price: {GUMROAD_PRODUCT_PRICE}
-- What's inside: 50 prompts across code review, debugging, refactoring, sprint planning, ADRs, and test design
-- Voice: declarative, peer-to-peer. NEVER use "if you want" / "if this resonates" / "in case it's helpful". Those signal low confidence and kill conversion.
-- Bad CTA (do NOT do this): "If you want to go deeper, I put together a prompt playbook — you can find it here."
-- Good CTA: "The full set is in {GUMROAD_PRODUCT_NAME} — 50 prompts across code review, debugging, refactor, and sprint planning. {GUMROAD_PRODUCT_PRICE} at LINK."
-- The end CTA should be 2-3 sentences max, last paragraph of the article.
+    # Subscribe URLs — the PRIMARY ask in cold channels is a free signup.
+    sub_long_url    = subscribe_url(f"long_w{week_number}",    source="devto")
+    sub_medium_url  = subscribe_url(f"medium_w{week_number}",  source="devto")
+    sub_roundup_url = subscribe_url(f"roundup_w{week_number}", source="devto")
+    sub_ih_url      = subscribe_url(f"ih_w{week_number}",      source="indiehackers")
+
+    # CTA strategy (revised 2026-05-26): cold readers don't buy a $19 PDF on
+    # first touch, so the END CTA in cold channels is now a FREE newsletter
+    # signup — far higher conversion, and the list is the only compounding
+    # asset. The paid product appears only as an optional mid-article soft aside
+    # (no link), never as the closing ask. The paid pitch lives in the warm
+    # newsletter, where the audience already opted in.
+    cta_rules = f"""CTA RULES — the closing ask is a FREE newsletter signup, NOT a paid product.
+- Goal: get the reader to subscribe to the free weekly newsletter "{BRAND_NAME}" — {BRAND_TAGLINE}. One concrete AI workflow per week.
+- Voice: declarative, peer-to-peer. NEVER use "if you want" / "if this resonates" / "in case it's helpful" — low-confidence framing kills conversion.
+- Good end CTA: "I break down one workflow like this every week in {BRAND_NAME} — practical, no fluff, free. Subscribe: LINK"
+- The end CTA is the last paragraph, 2-3 sentences, and ends with the subscribe LINK as plain text.
+- Do NOT pitch the paid product ({GUMROAD_PRODUCT_NAME}, {GUMROAD_PRODUCT_PRICE}) in the end CTA. It may appear ONLY where a format's rules explicitly allow a mid-article soft aside.
+"""
+
+    # The newsletter goes to people who already subscribed — this is the WARM
+    # channel, so here the closing ask IS the paid product.
+    newsletter_cta_rules = f"""CTA RULES — this is the newsletter (warm, opted-in audience), so the closing ask is the paid product.
+- Product name (verbatim): "{GUMROAD_PRODUCT_NAME}" — {GUMROAD_PRODUCT_PRICE}
+- What's inside: 50 prompts across code review, debugging, refactoring, sprint planning, ADRs, and test design.
+- Voice: declarative, peer-to-peer. NEVER use "if you want" / "if this resonates" — low-confidence framing kills conversion.
+- Good CTA: "The full set is in {GUMROAD_PRODUCT_NAME} — 50 prompts across code review, debugging, refactor, and sprint planning. {GUMROAD_PRODUCT_PRICE}: LINK"
 """
 
     system = (
@@ -411,8 +438,8 @@ Do NOT repeat or rephrase any of these previous titles: {previous_titles}
 Rules:
 - Title: specific and useful (e.g. "The 5 AI prompts I use before every code review"). No hype, no clickbait.
 - Body: 500-800 words markdown. Include 1-2 concrete copy-paste prompt examples in code blocks.
-- Include ONE mid-article soft mention: somewhere around the 60-70% point of the article (after introducing the main technique), add a one-line aside like "This pattern is one of the ones I've packaged into {GUMROAD_PRODUCT_NAME} — but the version below is enough to get value on its own." Then immediately keep teaching. The aside must NOT include a link — the link only appears in the end CTA.
-- End CTA: last paragraph, 2-3 sentences, declarative. Link: {devto_long_url}
+- Include ONE mid-article soft mention: somewhere around the 60-70% point of the article (after introducing the main technique), add a one-line aside like "This pattern is one of the ones I've packaged into {GUMROAD_PRODUCT_NAME} — but the version below is enough to get value on its own." Then immediately keep teaching. The aside must NOT include a link.
+- End CTA: free newsletter signup. Last paragraph, 2-3 sentences, declarative. Link: {sub_long_url}
 - Tone: practitioner to peers.
 
 {cta_rules}
@@ -426,7 +453,7 @@ Do NOT repeat or rephrase any of these recent titles: {previous_titles}
 Rules:
 - Title: sharp and specific.
 - Body: 300-500 words markdown, one concrete prompt or workflow example.
-- End CTA: last paragraph, 2-3 sentences, declarative. Link: {devto_medium_url}
+- End CTA: free newsletter signup. Last paragraph, 2-3 sentences, declarative. Link: {sub_medium_url}
 - Tone: peer-to-peer, no fluff. No mid-article mention (article is too short).
 
 {cta_rules}
@@ -441,7 +468,7 @@ Avoid these recent titles: {previous_titles}
 Rules:
 - Title: e.g. "What I learned about AI workflows this week" or "3 things that worked, 1 that didn't".
 - Body: 250-400 words markdown that ties together the week's themes (reference your own articles by topic, not by linking).
-- End CTA: last paragraph, 2-3 sentences, declarative. Link: {devto_roundup_url}
+- End CTA: free newsletter signup. Last paragraph, 2-3 sentences, declarative. Link: {sub_roundup_url}
 - Tone: casual, reflective. No mid-article mention.
 
 {cta_rules}
@@ -469,7 +496,7 @@ Rules:
 
 The body field is called body_html for legacy compatibility — but put PLAIN TEXT in it, not HTML.
 
-{cta_rules}
+{newsletter_cta_rules}
 Call submit_newsletter with the result.""",
 
         "ih_draft": f"""Week {week_number} — Indie Hackers post draft (the user will paste this manually).
@@ -480,7 +507,7 @@ Avoid these recent titles: {previous_titles}
 Rules:
 - Title: under 70 chars (e.g. "Week N: what I shipped + what I'm learning").
 - Body: 200-400 words markdown about something concrete you built/tried/learned this week.
-- End CTA: last paragraph, 2-3 sentences, declarative. Link: {ih_url}
+- End CTA: free newsletter signup. Last paragraph, 2-3 sentences, declarative. Link: {sub_ih_url}
 
 {cta_rules}
 Call submit_ih_draft with the result."""
