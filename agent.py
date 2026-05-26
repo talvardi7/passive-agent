@@ -548,6 +548,29 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
     bar3, p3 = pct_bar(monthly_run_rate, 500, "#378ADD")
     bar6, p6 = pct_bar(monthly_run_rate, 2000, "#1D9E75")
 
+    # Funnel diagnostic — the whole product is passive monitoring, so the report
+    # should say *where* the funnel leaks, not just list counts. The stages are:
+    # content views (DEV.to) → product-page views (Gumroad) → sales. A 0 at any
+    # stage with traffic upstream pinpoints exactly which step is broken. This is
+    # the most decision-relevant signal: e.g. lots of readers but 0 product views
+    # means the article→CTA click-through is the bottleneck, not the sales page.
+    content_views = devto.get("total_views", 0)
+    product_views = gumroad.get("views", 0)
+    total_sales = gumroad.get("sales_count", 0)
+    ctr = (product_views / content_views * 100) if content_views else 0
+    conv = (total_sales / product_views * 100) if product_views else 0
+    if content_views == 0:
+        funnel_note, funnel_color = "No content views yet — nothing is reaching readers.", "#9CA3AF"
+    elif product_views == 0:
+        funnel_note, funnel_color = (f"{content_views:,} readers, but 0 reached the product page. "
+                                     "The leak is upstream — the article→CTA click-through, not the sales page itself."), "#EF9F27"
+    elif total_sales == 0:
+        funnel_note, funnel_color = (f"{product_views:,} product-page views but 0 sales — readers click through, "
+                                     "so the leak is the sales page / price / offer."), "#EF9F27"
+    else:
+        funnel_note, funnel_color = (f"{ctr:.1f}% of readers click through; "
+                                     f"{conv:.1f}% of those buy."), "#1D9E75"
+
     # Build articles section
     articles_html = ""
     if articles:
@@ -723,6 +746,28 @@ def send_report(state, gumroad, devto, beehiiv, sales_baseline, results, article
         <div class="metric-sub"><a href="https://app.gumroad.com/dashboard" style="color:#378ADD;text-decoration:none">Dashboard ↗</a></div>
       </div>
     </div>
+  </div>
+
+  <div class="card">
+    <p class="section-title">Funnel — where it leaks</p>
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="metric-label">Content views</div>
+        <div class="metric-value">{content_views:,}</div>
+        <div class="metric-sub">DEV.to articles</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Product views</div>
+        <div class="metric-value">{product_views:,}</div>
+        <div class="metric-sub">{ctr:.1f}% click-through</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Sales</div>
+        <div class="metric-value">{total_sales:,}</div>
+        <div class="metric-sub">{conv:.1f}% of product views</div>
+      </div>
+    </div>
+    <p style="margin:14px 0 0;font-size:12px;color:{funnel_color};line-height:1.5">{funnel_note}</p>
   </div>
 
   <div class="card">
