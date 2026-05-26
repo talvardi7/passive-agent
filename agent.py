@@ -1175,7 +1175,8 @@ def daily_job():
                 if blog is not None and blog.HAS_BLOG:
                     try:
                         body_html = resp.get("body_html", "") or c.get("body_markdown", "")
-                        slug, blog_url = blog.publish_article(c["title"], body_html, str(today))
+                        slug, blog_url = blog.publish_article(c["title"], body_html, str(today),
+                                                              recent_posts=state.get("blog_posts", []))
                         results["devto"]["blog_url"] = blog_url
                         state.setdefault("blog_posts", []).append({"title": c["title"], "slug": slug, "date": str(today)})
                         blog.update_index(state["blog_posts"])
