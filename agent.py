@@ -240,6 +240,63 @@ def get_beehiiv_stats():
         print(f"  Beehiiv stats error: {e}")
         return {"subscribers": 0, "open_rate": 0, "issues_sent": 0, "ok": False}
 
+def log_metrics(gumroad, devto, beehiiv):
+    """Append today's numbers to metrics/history.jsonl in the repo so we keep a
+    daily time series that survives Render redeploys (which wipe state.json).
+    Uses the same GitHub Contents API as the blog. One JSON row per day; a re-run
+    on the same day overwrites that day's row instead of duplicating it. This is
+    the foundation for tracking trends and judging what actually moves numbers.
+    """
+    if blog is None or not blog.HAS_BLOG:
+        print("  Metrics log: skipped (no GitHub token)")
+        return
+    import base64
+    path = "metrics/history.jsonl"
+    today = str(datetime.date.today())
+    content_views = devto.get("total_views", 0)
+    product_views = gumroad.get("views", 0)
+    row = {
+        "date": today,
+        "devto_views": content_views,
+        "devto_articles": devto.get("articles", 0),
+        "devto_reactions": devto.get("total_reactions", 0),
+        "devto_followers": devto.get("followers", 0),
+        "beehiiv_subs": beehiiv.get("subscribers", 0),
+        "beehiiv_open_rate": beehiiv.get("open_rate", 0),
+        "beehiiv_issues": beehiiv.get("issues_sent", 0),
+        "gumroad_views": product_views,
+        "gumroad_sales": gumroad.get("sales_count", 0),
+        "gumroad_revenue": gumroad.get("revenue", 0),
+        # Derived funnel ratios so trend analysis doesn't have to recompute them.
+        "ctr_pct": round(product_views / content_views * 100, 3) if content_views else 0,
+    }
+    # Read existing file, drop any prior row for today (idempotent re-runs), append.
+    lines = []
+    try:
+        r = requests.get(
+            f"{blog.GITHUB_API}/repos/{blog.GITHUB_BLOG_REPO}/contents/{path}",
+            headers=blog._headers(), params={"ref": blog.GITHUB_BLOG_BRANCH}, timeout=15)
+        if r.status_code == 200:
+            raw = base64.b64decode(r.json().get("content", "")).decode("utf-8")
+            for line in raw.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    if json.loads(line).get("date") != today:
+                        lines.append(line)
+                except Exception:
+                    lines.append(line)  # keep malformed lines rather than lose data
+    except Exception as e:
+        print(f"  Metrics log: read failed ({e}) — starting fresh")
+    lines.append(json.dumps(row))
+    try:
+        blog._gh_put(path, "\n".join(lines) + "\n", f"Log metrics {today}")
+        print(f"  Metrics log: ✅ {today} ({len(lines)} day(s) tracked, CTR {row['ctr_pct']}%)")
+    except Exception as e:
+        print(f"  Metrics log: ❌ {e}")
+
+
 # ── CONTENT GENERATION ───────────────────────────────────────────────────────
 
 # Tool schemas — using the Anthropic tool-use API forces the model to return
@@ -1055,6 +1112,9 @@ def daily_job():
     print(f"  Gumroad: {gumroad['sales_count']} sales | ${gumroad['revenue']:.2f}")
     print(f"  DEV.to:  {devto_stats['total_views']} views | {devto_stats['followers']} followers")
     print(f"  Beehiiv: {beehiiv_stats['subscribers']} subs | {beehiiv_stats['open_rate']}% open rate")
+
+    # Persist a daily time series (survives Render redeploys) for trend analysis.
+    log_metrics(gumroad, devto_stats, beehiiv_stats)
 
     # 2. Publish new content on Mon/Wed/Fri
     if is_publish_day:
