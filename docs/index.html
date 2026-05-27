@@ -4,6 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The AI Leverage Weekly</title>
+  <meta name="description" content="Practical AI workflows for engineers. Concrete prompts, workflows, and lessons from shipping software with AI.">
+  <link rel="canonical" href="https://theaileverageweekly.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The AI Leverage Weekly">
+  <meta property="og:description" content="Practical AI workflows for engineers. Concrete prompts, workflows, and lessons from shipping software with AI.">
+  <meta property="og:url" content="https://theaileverageweekly.com/">
+  <meta property="og:site_name" content="The AI Leverage Weekly">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The AI Leverage Weekly">
+  <meta name="twitter:description" content="Practical AI workflows for engineers. Concrete prompts, workflows, and lessons from shipping software with AI.">
   <style>
   :root {
     --ink: #18181b; --muted: #6b7280; --faint: #9ca3af;
@@ -29,6 +39,9 @@
   .subscribe-btn { background: var(--accent); color: #fff; text-decoration: none; font-size: 14px;
                    font-weight: 600; padding: 9px 16px; border-radius: 8px; white-space: nowrap; }
   .subscribe-btn:hover { background: var(--accent-dark); }
+  .nav-actions { display: flex; align-items: center; gap: 16px; }
+  .nav-link { font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; white-space: nowrap; }
+  .nav-link:hover { color: var(--accent); }
 
   .hero { padding: 56px 0 8px; }
   .hero h1 { font-size: 34px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 12px; }
@@ -72,6 +85,14 @@
   .cta h3 { margin: 0 0 6px; font-size: 19px; }
   .cta p { margin: 0 0 18px; color: var(--muted); font-size: 15px; }
 
+  .read-next { margin: 48px 0 0; padding-top: 28px; border-top: 1px solid var(--border); }
+  .read-next h3 { margin: 0 0 14px; font-size: 13px; text-transform: uppercase;
+                  letter-spacing: 0.06em; color: var(--faint); }
+  .read-next ul { list-style: none; padding: 0; margin: 0; }
+  .read-next li { padding: 8px 0; }
+  .read-next a { font-size: 17px; font-weight: 600; color: var(--ink); text-decoration: none; }
+  .read-next a:hover { color: var(--accent); }
+
   .site-footer { margin-top: 64px; border-top: 1px solid var(--border); }
   .site-footer .container { padding: 26px 22px; font-size: 13px; color: var(--faint);
                             display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
@@ -92,7 +113,7 @@
   <header class="site-header">
     <div class="container">
       <a class="brand" href="/"><b>The AI Leverage Weekly</b><span>Practical AI workflows for engineers</span></a>
-      <a class="subscribe-btn" href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a>
+      <span class="nav-actions"><a class="nav-link" href="/free-prompts.html">Free prompts</a><a class="subscribe-btn" href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a></span>
     </div>
   </header>
   <div class="container">
@@ -102,8 +123,8 @@
     </section>
     <ul class="posts">
       <li>
-        <a class="post-link" href="/posts/how-i-used-ai-to-untangle-a-legacy-service-i-d-never-touched-before.html">How I Used AI to Untangle a Legacy Service I&#x27;d Never Touched Before</a>
-        <span class="date">2026-05-25</span>
+        <a class="post-link" href="/posts/your-ai-tools-are-only-as-good-as-your-judgment-and-that-s-the-point.html">Your AI Tools Are Only as Good as Your Judgment — And That&#x27;s the Point</a>
+        <span class="date">2026-05-27</span>
       </li>
       <li>
         <a class="post-link" href="/posts/7-ai-assisted-engineering-habits-worth-stealing-week-2-roundup.html">7 AI-Assisted Engineering Habits Worth Stealing (Week 2 Roundup)</a>
@@ -114,8 +135,9 @@
   <footer class="site-footer">
     <div class="container">
       <span>&copy; 2026 The AI Leverage Weekly</span>
-      <span><a href="/">All posts</a> &middot; <a href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a></span>
+      <span><a href="/">All posts</a> &middot; <a href="/free-prompts.html">Free prompts</a> &middot; <a href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a></span>
     </div>
   </footer>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Blog", "name": "The AI Leverage Weekly", "description": "Practical AI workflows for engineers. Concrete prompts, workflows, and lessons from shipping software with AI.", "url": "https://theaileverageweekly.com/", "publisher": {"@type": "Organization", "name": "The AI Leverage Weekly"}}</script>
 </body>
 </html>
