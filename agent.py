@@ -283,6 +283,7 @@ def log_metrics(gumroad, devto, beehiiv):
     }
     # Read existing file, drop any prior row for today (idempotent re-runs), append.
     lines = []
+    prev_today = None
     try:
         r = requests.get(
             f"{blog.GITHUB_API}/repos/{blog.GITHUB_BLOG_REPO}/contents/{path}",
@@ -294,15 +295,29 @@ def log_metrics(gumroad, devto, beehiiv):
                 if not line:
                     continue
                 try:
-                    if json.loads(line).get("date") != today:
+                    parsed = json.loads(line)
+                    if parsed.get("date") != today:
                         lines.append(line)
+                    else:
+                        prev_today = parsed
                 except Exception:
                     lines.append(line)  # keep malformed lines rather than lose data
     except Exception as e:
         print(f"  Metrics log: read failed ({e}) — starting fresh")
+
+    # Skip the commit entirely when today's numbers are unchanged. Critical:
+    # Render auto-deploys on every push to this repo, and a deploy re-runs the
+    # agent — so an unconditional commit here creates a redeploy loop (it did:
+    # ~20 deploys ~50s apart on 2026-05-27). No-op when nothing changed.
+    if prev_today == row:
+        print(f"  Metrics log: ⏭  {today} unchanged, skipping commit")
+        return
+
     lines.append(json.dumps(row))
     try:
-        blog._gh_put(path, "\n".join(lines) + "\n", f"Log metrics {today}")
+        # "[skip render]" stops Render from auto-deploying on this data-only
+        # commit — the second half of the redeploy-loop fix (see note above).
+        blog._gh_put(path, "\n".join(lines) + "\n", f"Log metrics {today} [skip render]")
         print(f"  Metrics log: ✅ {today} ({len(lines)} day(s) tracked, CTR {row['ctr_pct']}%)")
     except Exception as e:
         print(f"  Metrics log: ❌ {e}")

@@ -415,7 +415,7 @@ def _free_prompts_html():
 
 def publish_free_prompts_page():
     """Generate/refresh the free lead-magnet prompts page. Cheap + idempotent."""
-    _gh_put("docs/free-prompts.html", _free_prompts_html(), "Update free prompts page")
+    _gh_put("docs/free-prompts.html", _free_prompts_html(), "Update free prompts page [skip render]")
     return f"https://{BLOG_DOMAIN}/free-prompts.html"
 
 
@@ -445,14 +445,16 @@ def publish_article(title, body_html, date_str, recent_posts=None):
     recent_posts (prior posts) powers the internal 'Read next' links."""
     slug = slugify(title)
     page = _article_html(title, body_html, date_str, recent_posts=recent_posts)
-    _gh_put(f"docs/posts/{slug}.html", page, f"Publish post: {title}")
+    # "[skip render]": GitHub Pages serves the blog, not Render — blog commits
+    # must not trigger a Render redeploy (which would re-run the agent).
+    _gh_put(f"docs/posts/{slug}.html", page, f"Publish post: {title} [skip render]")
     return slug, f"https://{BLOG_DOMAIN}/posts/{slug}.html"
 
 
 def update_index(posts):
     """Regenerate docs/index.html plus sitemap.xml and robots.txt from the full
     posts list (sitemap + robots help search engines discover every post)."""
-    _gh_put("docs/index.html", _index_html(posts), "Update blog index")
-    _gh_put("docs/sitemap.xml", _sitemap_xml(posts), "Update sitemap")
-    _gh_put("docs/robots.txt", _robots_txt(), "Update robots.txt")
+    _gh_put("docs/index.html", _index_html(posts), "Update blog index [skip render]")
+    _gh_put("docs/sitemap.xml", _sitemap_xml(posts), "Update sitemap [skip render]")
+    _gh_put("docs/robots.txt", _robots_txt(), "Update robots.txt [skip render]")
     publish_free_prompts_page()
