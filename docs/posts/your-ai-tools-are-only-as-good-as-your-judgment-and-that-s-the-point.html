@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your AI Tools Are Only as Good as Your Judgment — And That&#x27;s the Point — The AI Leverage Weekly</title>
+  <meta name="description" content="There&#x27;s a quiet anxiety spreading through engineering teams right now: Am I becoming dependent on AI? Is my judgment atrophying? My take: that&#x27;s the wrong…">
+  <link rel="canonical" href="https://theaileverageweekly.com/posts/your-ai-tools-are-only-as-good-as-your-judgment-and-that-s-the-point.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Your AI Tools Are Only as Good as Your Judgment — And That&#x27;s the Point — The AI Leverage Weekly">
+  <meta property="og:description" content="There&#x27;s a quiet anxiety spreading through engineering teams right now: Am I becoming dependent on AI? Is my judgment atrophying? My take: that&#x27;s the wrong…">
+  <meta property="og:url" content="https://theaileverageweekly.com/posts/your-ai-tools-are-only-as-good-as-your-judgment-and-that-s-the-point.html">
+  <meta property="og:site_name" content="The AI Leverage Weekly">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Your AI Tools Are Only as Good as Your Judgment — And That&#x27;s the Point — The AI Leverage Weekly">
+  <meta name="twitter:description" content="There&#x27;s a quiet anxiety spreading through engineering teams right now: Am I becoming dependent on AI? Is my judgment atrophying? My take: that&#x27;s the wrong…">
+  <style>
+  :root {
+    --ink: #18181b; --muted: #6b7280; --faint: #9ca3af;
+    --accent: #4f46e5; --accent-dark: #4338ca;
+    --border: #ececf0; --bg: #ffffff; --bg-soft: #f7f7fb;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.6;
+         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  .topbar { height: 4px; background: linear-gradient(90deg, #4f46e5, #7c6cf0); }
+  .container { max-width: 720px; margin: 0 auto; padding: 0 22px; }
+  a { color: var(--accent); }
+
+  .site-header { border-bottom: 1px solid var(--border); }
+  .site-header .container { display: flex; align-items: center; justify-content: space-between;
+                            padding-top: 20px; padding-bottom: 20px; gap: 16px; }
+  .brand { text-decoration: none; color: var(--ink); }
+  .brand b { display: block; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+  .brand span { display: block; font-weight: 400; font-size: 12px; color: var(--faint); margin-top: 1px; }
+  .subscribe-btn { background: var(--accent); color: #fff; text-decoration: none; font-size: 14px;
+                   font-weight: 600; padding: 9px 16px; border-radius: 8px; white-space: nowrap; }
+  .subscribe-btn:hover { background: var(--accent-dark); }
+  .nav-actions { display: flex; align-items: center; gap: 16px; }
+  .nav-link { font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; white-space: nowrap; }
+  .nav-link:hover { color: var(--accent); }
+
+  .hero { padding: 56px 0 8px; }
+  .hero h1 { font-size: 34px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 12px; }
+  .hero p { font-size: 17px; color: var(--muted); margin: 0; max-width: 34em; }
+
+  .posts { list-style: none; padding: 0; margin: 24px 0 0; }
+  .posts li { padding: 26px 0; border-top: 1px solid var(--border); }
+  .posts a.post-link { font-size: 22px; font-weight: 650; line-height: 1.3; letter-spacing: -0.01em;
+                       color: var(--ink); text-decoration: none; }
+  .posts a.post-link:hover { color: var(--accent); }
+  .posts .date { display: block; font-size: 12px; color: var(--faint); margin-top: 8px;
+                 text-transform: uppercase; letter-spacing: 0.05em; }
+
+  article { padding: 44px 0 0; }
+  .back { font-size: 14px; color: var(--muted); text-decoration: none; }
+  .back:hover { color: var(--accent); }
+  article h1 { font-size: 36px; line-height: 1.18; letter-spacing: -0.02em; margin: 22px 0 12px; }
+  .post-meta { font-size: 12px; color: var(--faint); text-transform: uppercase;
+               letter-spacing: 0.05em; margin-bottom: 36px; }
+  .post-body { font-family: Georgia, 'Times New Roman', serif; font-size: 19px; line-height: 1.75; color: #27272a; }
+  .post-body p { margin: 0 0 22px; }
+  .post-body h2 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                  font-size: 25px; letter-spacing: -0.01em; margin: 44px 0 14px; }
+  .post-body h3 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                  font-size: 20px; margin: 32px 0 10px; }
+  .post-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .post-body ul, .post-body ol { padding-left: 24px; margin: 0 0 22px; }
+  .post-body li { margin: 6px 0; }
+  .post-body blockquote { margin: 24px 0; padding: 4px 20px; border-left: 3px solid var(--accent);
+                          color: var(--muted); font-style: italic; }
+  .post-body pre { background: #f6f8fa; border: 1px solid var(--border); border-radius: 8px;
+                   padding: 16px 18px; overflow-x: auto; font-size: 14.5px; line-height: 1.6;
+                   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .post-body code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                    font-size: 0.86em; background: #f1f1f5; padding: 2px 6px; border-radius: 4px; }
+  .post-body pre code { background: none; padding: 0; font-size: inherit; }
+  .post-body img { max-width: 100%; height: auto; border-radius: 8px; }
+
+  .cta { margin: 56px 0 0; padding: 28px; background: var(--bg-soft);
+         border: 1px solid var(--border); border-radius: 12px; text-align: center; }
+  .cta h3 { margin: 0 0 6px; font-size: 19px; }
+  .cta p { margin: 0 0 18px; color: var(--muted); font-size: 15px; }
+
+  .read-next { margin: 48px 0 0; padding-top: 28px; border-top: 1px solid var(--border); }
+  .read-next h3 { margin: 0 0 14px; font-size: 13px; text-transform: uppercase;
+                  letter-spacing: 0.06em; color: var(--faint); }
+  .read-next ul { list-style: none; padding: 0; margin: 0; }
+  .read-next li { padding: 8px 0; }
+  .read-next a { font-size: 17px; font-weight: 600; color: var(--ink); text-decoration: none; }
+  .read-next a:hover { color: var(--accent); }
+
+  .site-footer { margin-top: 64px; border-top: 1px solid var(--border); }
+  .site-footer .container { padding: 26px 22px; font-size: 13px; color: var(--faint);
+                            display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
+  .site-footer a { color: var(--muted); text-decoration: none; }
+  .site-footer a:hover { color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .hero { padding-top: 40px; }
+    .hero h1 { font-size: 28px; }
+    article h1 { font-size: 28px; }
+    .post-body { font-size: 18px; }
+    .posts a.post-link { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar"></div>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="/"><b>The AI Leverage Weekly</b><span>Practical AI workflows for engineers</span></a>
+      <span class="nav-actions"><a class="nav-link" href="/free-prompts.html">Free prompts</a><a class="subscribe-btn" href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a></span>
+    </div>
+  </header>
+  <div class="container">
+    <article>
+      <a class="back" href="/">&larr; All posts</a>
+      <h1>Your AI Tools Are Only as Good as Your Judgment — And That&#x27;s the Point</h1>
+      <div class="post-meta">2026-05-27</div>
+      <div class="post-body"><p>There's a quiet anxiety spreading through engineering teams right now: <em>Am I becoming dependent on AI? Is my judgment atrophying?</em></p>
+
+<p>My take: that's the wrong question. The right one is whether you're using AI in a way that <strong>sharpens</strong> your judgment or <strong>replaces</strong> it. Those are genuinely different modes of use, and most engineers drift into the second one without noticing.</p>
+
+<h2>
+  <a name="the-dependency-trap-is-real-but-misdiagnosed" href="#the-dependency-trap-is-real-but-misdiagnosed">
+  </a>
+  The Dependency Trap Is Real — But Misdiagnosed
+</h2>
+
+<p>The common critique is that AI tools make engineers lazy. I don't think that's it. The problem isn't laziness — it's <strong>abdication</strong>. When you accept a generated solution without interrogating it, you're not saving time. You're deferring a debt that compounds interest.</p>
+
+<p>The engineer who copy-pastes an AI-generated auth middleware without reading it isn't moving faster. They're moving faster <em>now</em> and slower — much slower — when that middleware silently fails in a production edge case at 2am.</p>
+
+<p>But here's where I'll stake the actual opinion: <strong>the solution isn't to use AI less. It's to use it adversarially.</strong></p>
+
+<h2>
+  <a name="adversarial-use-concretely" href="#adversarial-use-concretely">
+  </a>
+  Adversarial Use, Concretely
+</h2>
+
+<p>What does adversarial use look like? You treat the AI output as a first draft from a smart-but-overconfident junior engineer. You don't reject it reflexively and you don't accept it wholesale. You interrogate it.</p>
+
+<p>Here's a prompt pattern I've baked into my actual workflow:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>Here's the solution you proposed: [paste output]
+
+Now argue against it. What are the edge cases this doesn't handle? 
+What assumptions did you make that might not hold in a production system? 
+What would you change if you knew this code would be read by a senior 
+engineer in a security audit?
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>Run that after any non-trivial AI-generated solution. What comes back is almost always useful — missed error states, implicit assumptions about input shape, security surface area that got glossed over. And critically: you are now <em>thinking alongside the tool</em>, not just consuming its output.</p>
+
+<p>That loop — generate, interrogate, revise — is where judgment lives. It's where you stay sharp.</p>
+
+<h2>
+  <a name="the-real-skill-isnt-prompting" href="#the-real-skill-isnt-prompting">
+  </a>
+  The Real Skill Isn't Prompting
+</h2>
+
+<p>The engineers who will be dangerous with AI five years from now aren't the ones who have memorized the best prompt templates. They're the ones who can look at any generated output — code, architecture diagram, spec, test suite — and immediately ask the right skeptical questions.</p>
+
+<p>That skill is built by practice. Adversarial prompting is one way to practice it deliberately rather than accidentally.</p>
+
+<p>AI doesn't erode engineering judgment. Passive AI use does. The distinction matters, and it's entirely within your control.</p>
+
+
+<hr>
+
+<p>I break down one concrete AI workflow like this every week in <strong>The AI Leverage Weekly</strong> — practical, no fluff, free. Subscribe: <a href="https://theaileverageweekly.beehiiv.com/subscribe?utm_source=devto&amp;utm_medium=article&amp;utm_campaign=medium_w3" target="_blank" rel="noopener noreferrer">https://theaileverageweekly.beehiiv.com/subscribe?utm_source=devto&amp;utm_medium=article&amp;utm_campaign=medium_w3</a></p>
+
+</div>
+      <div class="cta">
+      <h3>Get the next one in your inbox</h3>
+      <p>Practical AI workflows for engineers. One issue a week, no fluff.</p>
+      <a class="subscribe-btn" href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe free</a>
+    </div>
+      <nav class="read-next" aria-label="More posts">
+      <h3>Read next</h3>
+      <ul>
+      <li><a href="/posts/7-ai-assisted-engineering-habits-worth-stealing-week-2-roundup.html">7 AI-Assisted Engineering Habits Worth Stealing (Week 2 Roundup)</a></li>
+      </ul>
+    </nav>
+    </article>
+  </div>
+  <footer class="site-footer">
+    <div class="container">
+      <span>&copy; 2026 The AI Leverage Weekly</span>
+      <span><a href="/">All posts</a> &middot; <a href="/free-prompts.html">Free prompts</a> &middot; <a href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a></span>
+    </div>
+  </footer>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "Your AI Tools Are Only as Good as Your Judgment — And That's the Point", "description": "There's a quiet anxiety spreading through engineering teams right now: Am I becoming dependent on AI? Is my judgment atrophying? My take: that's the wrong…", "datePublished": "2026-05-27", "url": "https://theaileverageweekly.com/posts/your-ai-tools-are-only-as-good-as-your-judgment-and-that-s-the-point.html", "mainEntityOfPage": "https://theaileverageweekly.com/posts/your-ai-tools-are-only-as-good-as-your-judgment-and-that-s-the-point.html", "author": {"@type": "Organization", "name": "The AI Leverage Weekly"}, "publisher": {"@type": "Organization", "name": "The AI Leverage Weekly"}}</script>
+</body>
+</html>
