@@ -225,7 +225,13 @@ def get_beehiiv_stats():
         r.raise_for_status()
         stats = r.json().get("data", {}).get("stats", {}) or {}
         total_subs = stats.get("active_subscriptions", 0)
-        open_rate = stats.get("average_open_rate", 0) or 0
+        # Beehiiv changed average_open_rate from a decimal (0.5 = 50%) to an
+        # already-percent value (50.0 = 50%) at some point. The old code
+        # unconditionally multiplied by 100, producing the 10000.0% report seen
+        # on 2026-05-28. Normalize: values in (0,1] are decimals, anything > 1
+        # is already a percent. Clamp to 100.
+        _or = float(stats.get("average_open_rate", 0) or 0)
+        open_rate_pct = min(_or * 100 if 0 < _or <= 1 else _or, 100)
 
         # Count of confirmed (sent) issues — separate call, best-effort.
         issues_sent = 0
@@ -243,7 +249,7 @@ def get_beehiiv_stats():
 
         return {
             "subscribers": total_subs,
-            "open_rate": round(open_rate * 100, 1) if open_rate else 0,
+            "open_rate": round(open_rate_pct, 1),
             "issues_sent": issues_sent,
             "ok": True
         }
