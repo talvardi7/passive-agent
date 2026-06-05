@@ -86,6 +86,31 @@ DEVTO_TAGS_ROTATION = [
 ANGLES = ["tutorial", "opinion", "case_study", "tip_list", "story"]
 PUBLISH_DAYS = {0: "monday", 2: "wednesday", 4: "friday"}
 
+# Privacy safety net. The list of forbidden terms is read from env (Render),
+# NOT hardcoded in this public repo — otherwise the safeguard would itself leak
+# the identity it's protecting. Set FORBIDDEN_TERMS as a comma-separated list,
+# e.g.: "tal,vardi,talvardi,talvardi7,sandisk,western digital,wdc". Matching is
+# case-insensitive with word boundaries (so 'tal' won't match 'metal'). If any
+# term appears in generated content, generate_content raises and publish is
+# blocked — the caller's try/except surfaces it in the daily report.
+import re as _re_priv
+def _forbidden_terms():
+    raw = os.environ.get("FORBIDDEN_TERMS", "")
+    return [t.strip() for t in raw.split(",") if t.strip()]
+
+def _safety_violations(*texts):
+    terms = _forbidden_terms()
+    if not terms:
+        return []
+    hay = " ".join((t or "") for t in texts)
+    hits = []
+    for term in terms:
+        # word-boundary, case-insensitive — allow internal spaces in the term
+        pat = _re_priv.compile(rf"(?<![A-Za-z0-9]){_re_priv.escape(term)}(?![A-Za-z0-9])", _re_priv.IGNORECASE)
+        if pat.search(hay):
+            hits.append(term)
+    return hits
+
 
 def tracked_url(campaign, source="devto"):
     """Append UTM parameters so we can see in Gumroad analytics which channel
@@ -447,7 +472,14 @@ def generate_content(week_number, format_key, state):
         "Write posts that are genuinely useful — concrete, specific, actionable. "
         "The body should never sound like marketing. The end CTA is allowed to be direct and confident — "
         "treat it like recommending a tool to a colleague, not pitching a product. "
-        "Vary topic and angle. Use the provided tool to return your output."
+        "Vary topic and angle. Use the provided tool to return your output. "
+        "\n\nPRIVACY — STRICT, NON-NEGOTIABLE: never mention any real person's name, "
+        "any specific employer or company you work for, any specific job title, any city/country/region "
+        "of residence, or any biographical detail that could identify the author. Do NOT invent a name, "
+        "an employer, or a location either. Write in first person ('I') with no personal identifiers. "
+        "Phrases like 'my employer is…', 'I work at…', 'I'm based in…', 'when I was at <Company>…' are "
+        "FORBIDDEN. Keep all engineering anecdotes generic ('on a recent project', 'a team I worked with', "
+        "'a service I was responsible for') — never tie them to a named org or place."
     )
 
     prompts = {
@@ -564,6 +596,22 @@ Call submit_ih_draft with the result."""
         out["tags"] = cleaned[:4] or list(tags)
 
     out["_angle"] = angle
+
+    # PRIVACY SAFETY NET — last line of defense. If the LLM drifted and surfaced
+    # any forbidden term (real name / employer / etc., set via FORBIDDEN_TERMS
+    # env on Render), refuse to return → the caller's try/except blocks publish
+    # and the failure shows up in the daily report. Scans every text field the
+    # model may have populated for any of our formats.
+    violations = _safety_violations(
+        out.get("title", ""), out.get("body_markdown", ""),
+        out.get("subject", ""), out.get("body_html", ""), out.get("body", ""),
+    )
+    if violations:
+        raise RuntimeError(
+            f"PRIVACY SAFETY: refusing to publish — generated content contains "
+            f"forbidden term(s): {violations}. Format={format_key}, week={week_number}."
+        )
+
     return out
 
 # ── POSTING ──────────────────────────────────────────────────────────────────
