@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>We Cut Onboarding Time by 40% Using AI — Here&#x27;s Exactly What We Did (Week 5 Roundup) — The AI Leverage Weekly</title>
+  <meta name="description" content="We Cut Onboarding Time by 40% Using AI — Here&#x27;s Exactly What We Did (Week 5 Roundup) This week&#x27;s theme snuck up on me: AI as a knowledge transfer tool …">
+  <link rel="canonical" href="https://theaileverageweekly.com/posts/we-cut-onboarding-time-by-40-using-ai-here-s-exactly-what-we-did-week.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="We Cut Onboarding Time by 40% Using AI — Here&#x27;s Exactly What We Did (Week 5 Roundup) — The AI Leverage Weekly">
+  <meta property="og:description" content="We Cut Onboarding Time by 40% Using AI — Here&#x27;s Exactly What We Did (Week 5 Roundup) This week&#x27;s theme snuck up on me: AI as a knowledge transfer tool …">
+  <meta property="og:url" content="https://theaileverageweekly.com/posts/we-cut-onboarding-time-by-40-using-ai-here-s-exactly-what-we-did-week.html">
+  <meta property="og:site_name" content="The AI Leverage Weekly">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="We Cut Onboarding Time by 40% Using AI — Here&#x27;s Exactly What We Did (Week 5 Roundup) — The AI Leverage Weekly">
+  <meta name="twitter:description" content="We Cut Onboarding Time by 40% Using AI — Here&#x27;s Exactly What We Did (Week 5 Roundup) This week&#x27;s theme snuck up on me: AI as a knowledge transfer tool …">
+  <style>
+  :root {
+    --ink: #18181b; --muted: #6b7280; --faint: #9ca3af;
+    --accent: #4f46e5; --accent-dark: #4338ca;
+    --border: #ececf0; --bg: #ffffff; --bg-soft: #f7f7fb;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.6;
+         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  .topbar { height: 4px; background: linear-gradient(90deg, #4f46e5, #7c6cf0); }
+  .container { max-width: 720px; margin: 0 auto; padding: 0 22px; }
+  a { color: var(--accent); }
+
+  .site-header { border-bottom: 1px solid var(--border); }
+  .site-header .container { display: flex; align-items: center; justify-content: space-between;
+                            padding-top: 20px; padding-bottom: 20px; gap: 16px; }
+  .brand { text-decoration: none; color: var(--ink); }
+  .brand b { display: block; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+  .brand span { display: block; font-weight: 400; font-size: 12px; color: var(--faint); margin-top: 1px; }
+  .subscribe-btn { background: var(--accent); color: #fff; text-decoration: none; font-size: 14px;
+                   font-weight: 600; padding: 9px 16px; border-radius: 8px; white-space: nowrap; }
+  .subscribe-btn:hover { background: var(--accent-dark); }
+  .nav-actions { display: flex; align-items: center; gap: 16px; }
+  .nav-link { font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; white-space: nowrap; }
+  .nav-link:hover { color: var(--accent); }
+
+  .hero { padding: 56px 0 8px; }
+  .hero h1 { font-size: 34px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 12px; }
+  .hero p { font-size: 17px; color: var(--muted); margin: 0; max-width: 34em; }
+
+  .posts { list-style: none; padding: 0; margin: 24px 0 0; }
+  .posts li { padding: 26px 0; border-top: 1px solid var(--border); }
+  .posts a.post-link { font-size: 22px; font-weight: 650; line-height: 1.3; letter-spacing: -0.01em;
+                       color: var(--ink); text-decoration: none; }
+  .posts a.post-link:hover { color: var(--accent); }
+  .posts .date { display: block; font-size: 12px; color: var(--faint); margin-top: 8px;
+                 text-transform: uppercase; letter-spacing: 0.05em; }
+
+  article { padding: 44px 0 0; }
+  .back { font-size: 14px; color: var(--muted); text-decoration: none; }
+  .back:hover { color: var(--accent); }
+  article h1 { font-size: 36px; line-height: 1.18; letter-spacing: -0.02em; margin: 22px 0 12px; }
+  .post-meta { font-size: 12px; color: var(--faint); text-transform: uppercase;
+               letter-spacing: 0.05em; margin-bottom: 36px; }
+  .post-body { font-family: Georgia, 'Times New Roman', serif; font-size: 19px; line-height: 1.75; color: #27272a; }
+  .post-body p { margin: 0 0 22px; }
+  .post-body h2 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                  font-size: 25px; letter-spacing: -0.01em; margin: 44px 0 14px; }
+  .post-body h3 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                  font-size: 20px; margin: 32px 0 10px; }
+  .post-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .post-body ul, .post-body ol { padding-left: 24px; margin: 0 0 22px; }
+  .post-body li { margin: 6px 0; }
+  .post-body blockquote { margin: 24px 0; padding: 4px 20px; border-left: 3px solid var(--accent);
+                          color: var(--muted); font-style: italic; }
+  .post-body pre { background: #f6f8fa; border: 1px solid var(--border); border-radius: 8px;
+                   padding: 16px 18px; overflow-x: auto; font-size: 14.5px; line-height: 1.6;
+                   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .post-body code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                    font-size: 0.86em; background: #f1f1f5; padding: 2px 6px; border-radius: 4px; }
+  .post-body pre code { background: none; padding: 0; font-size: inherit; }
+  .post-body img { max-width: 100%; height: auto; border-radius: 8px; }
+
+  .cta { margin: 56px 0 0; padding: 28px; background: var(--bg-soft);
+         border: 1px solid var(--border); border-radius: 12px; text-align: center; }
+  .cta h3 { margin: 0 0 6px; font-size: 19px; }
+  .cta p { margin: 0 0 18px; color: var(--muted); font-size: 15px; }
+
+  .read-next { margin: 48px 0 0; padding-top: 28px; border-top: 1px solid var(--border); }
+  .read-next h3 { margin: 0 0 14px; font-size: 13px; text-transform: uppercase;
+                  letter-spacing: 0.06em; color: var(--faint); }
+  .read-next ul { list-style: none; padding: 0; margin: 0; }
+  .read-next li { padding: 8px 0; }
+  .read-next a { font-size: 17px; font-weight: 600; color: var(--ink); text-decoration: none; }
+  .read-next a:hover { color: var(--accent); }
+
+  .site-footer { margin-top: 64px; border-top: 1px solid var(--border); }
+  .site-footer .container { padding: 26px 22px; font-size: 13px; color: var(--faint);
+                            display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
+  .site-footer a { color: var(--muted); text-decoration: none; }
+  .site-footer a:hover { color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .hero { padding-top: 40px; }
+    .hero h1 { font-size: 28px; }
+    article h1 { font-size: 28px; }
+    .post-body { font-size: 18px; }
+    .posts a.post-link { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar"></div>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="/"><b>The AI Leverage Weekly</b><span>Practical AI workflows for engineers</span></a>
+      <span class="nav-actions"><a class="nav-link" href="/free-prompts.html">Free prompts</a><a class="subscribe-btn" href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a></span>
+    </div>
+  </header>
+  <div class="container">
+    <article>
+      <a class="back" href="/">&larr; All posts</a>
+      <h1>We Cut Onboarding Time by 40% Using AI — Here&#x27;s Exactly What We Did (Week 5 Roundup)</h1>
+      <div class="post-meta">2026-06-12</div>
+      <div class="post-body"><h1>
+  <a name="we-cut-onboarding-time-by-40-using-ai-heres-exactly-what-we-did-week-5-roundup" href="#we-cut-onboarding-time-by-40-using-ai-heres-exactly-what-we-did-week-5-roundup">
+  </a>
+  We Cut Onboarding Time by 40% Using AI — Here's Exactly What We Did (Week 5 Roundup)
+</h1>
+
+<p>This week's theme snuck up on me: <strong>AI as a knowledge transfer tool</strong>, not just a coding assistant.</p>
+
+<p>It started with a practical problem. We had a new engineer joining a team that owned a gnarly 4-year-old backend service. No real docs. Tribal knowledge scattered across Slack threads and the heads of two people who'd since moved to other teams. Historically, getting someone productive on this service took 6–8 weeks. The first two weeks were basically lost — reading code, asking questions, getting lost again.</p>
+
+<p>This time, we tried something different.</p>
+
+<p>We spent about 3 hours upfront running the codebase through a structured AI-assisted audit. We asked it to map data flows, identify the non-obvious entry points, and flag the areas where the code didn't match what the surrounding comments implied it did. That last part alone surfaced 11 spots where the "how" and "why" had quietly diverged over years of patches.</p>
+
+<p>From that, we generated a living onboarding doc — not a static README, but something structured around <em>questions a new engineer will actually ask</em>. Things like: "Why is this service the source of truth instead of the other one?" and "What breaks first when this queue backs up?"</p>
+
+<p>The new engineer was opening meaningful PRs by the end of week two. That's a 40% reduction in ramp time compared to our baseline on the same service.</p>
+
+<p>This connects directly to what I wrote about earlier this week. The piece on prompts I use to stay unblocked? Half of those exist because I got tired of losing hours to orientation problems — not knowing where to start, not knowing what I didn't know. AI doesn't fix confusion automatically, but it compresses the time between <em>lost</em> and <em>oriented</em> dramatically when you ask it the right questions.</p>
+
+<p>The junior devs piece is the other side of this coin. Onboarding faster isn't cheating the learning process — it's front-loading the context so the actual learning can happen sooner. Juniors who use AI well aren't skipping the hard parts. They're getting to the hard parts faster.</p>
+
+<p>That's the pattern I keep seeing: AI as a forcing function for knowledge that was always there but never made explicit.</p>
+
+
+<hr>
+
+<p>I break down one workflow like this every week in The AI Leverage Weekly — practical, no fluff, free. Subscribe: <a href="https://theaileverageweekly.beehiiv.com/subscribe?utm_source=devto&amp;utm_medium=article&amp;utm_campaign=roundup_w5" target="_blank" rel="noopener noreferrer">https://theaileverageweekly.beehiiv.com/subscribe?utm_source=devto&amp;utm_medium=article&amp;utm_campaign=roundup_w5</a></p>
+
+</div>
+      <div class="cta">
+      <h3>Get the next one in your inbox</h3>
+      <p>Practical AI workflows for engineers. One issue a week, no fluff.</p>
+      <a class="subscribe-btn" href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe free</a>
+    </div>
+      <nav class="read-next" aria-label="More posts">
+      <h3>Read next</h3>
+      <ul>
+      <li><a href="/posts/junior-devs-who-use-ai-are-not-cheating-they-re-training-smarter.html">Junior Devs Who Use AI Are Not Cheating — They&#x27;re Training Smarter</a></li>
+      <li><a href="/posts/10-prompts-i-reach-for-every-week-to-stay-unblocked-as-an-engineer.html">10 Prompts I Reach for Every Week to Stay Unblocked as an Engineer</a></li>
+      <li><a href="/posts/how-we-shipped-a-feature-in-2-days-that-was-scoped-for-a-week-week-4-f.html">How We Shipped a Feature in 2 Days That Was Scoped for a Week (Week 4 Friday Roundup)</a></li>
+      </ul>
+    </nav>
+    </article>
+  </div>
+  <footer class="site-footer">
+    <div class="container">
+      <span>&copy; 2026 The AI Leverage Weekly</span>
+      <span><a href="/">All posts</a> &middot; <a href="/free-prompts.html">Free prompts</a> &middot; <a href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a></span>
+    </div>
+  </footer>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "We Cut Onboarding Time by 40% Using AI — Here's Exactly What We Did (Week 5 Roundup)", "description": "We Cut Onboarding Time by 40% Using AI — Here's Exactly What We Did (Week 5 Roundup) This week's theme snuck up on me: AI as a knowledge transfer tool …", "datePublished": "2026-06-12", "url": "https://theaileverageweekly.com/posts/we-cut-onboarding-time-by-40-using-ai-here-s-exactly-what-we-did-week.html", "mainEntityOfPage": "https://theaileverageweekly.com/posts/we-cut-onboarding-time-by-40-using-ai-here-s-exactly-what-we-did-week.html", "author": {"@type": "Organization", "name": "The AI Leverage Weekly"}, "publisher": {"@type": "Organization", "name": "The AI Leverage Weekly"}}</script>
+</body>
+</html>
