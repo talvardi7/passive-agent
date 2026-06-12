@@ -145,6 +145,74 @@ def pick_angle(recent_angles):
             return candidate
     return ANGLES[0]
 
+# ── SEO TOPIC ENGINE (added 2026-06-12) ──────────────────────────────────────
+# The "one real swing": our blog has full SEO infra (canonical, meta, JSON-LD,
+# sitemap) but the CONTENT was free-form opinion pieces nobody searches for.
+# Organic search is the ONLY traffic source that compounds without engagement,
+# is fully passive, needs no human input, and carries zero ban risk — so we
+# point the generator at concrete, evergreen, high-intent queries real engineers
+# Google. Each topic's `q` becomes the article title/H1 (matching the search
+# query is the core on-page SEO win); `angle` shapes the body; `tags` are DEV.to
+# tags. Rotated to avoid recent repeats. Disable by setting SEO_TOPICS_ENABLED=0.
+SEO_TOPICS_ENABLED = os.environ.get("SEO_TOPICS_ENABLED", "1") not in ("0", "false", "False")
+
+SEO_TOPICS = [
+    {"q": "How to write better Git commit messages with AI",        "angle": "tutorial",  "tags": ["git", "ai", "productivity", "tutorial"]},
+    {"q": "Claude vs ChatGPT for code review: which is better?",    "angle": "opinion",   "tags": ["ai", "programming", "productivity", "career"]},
+    {"q": "How to generate unit tests from a function with AI",     "angle": "tutorial",  "tags": ["testing", "ai", "programming", "tutorial"]},
+    {"q": "How to use AI to debug a stack trace",                   "angle": "tutorial",  "tags": ["debugging", "ai", "programming", "beginners"]},
+    {"q": "The best AI prompts for refactoring legacy code",        "angle": "tip_list",  "tags": ["refactoring", "ai", "programming", "productivity"]},
+    {"q": "How to write a pull request description with AI",        "angle": "tutorial",  "tags": ["git", "ai", "productivity", "career"]},
+    {"q": "How to use AI to understand an unfamiliar codebase",     "angle": "tutorial",  "tags": ["ai", "programming", "career", "productivity"]},
+    {"q": "How to use AI to write SQL queries from plain English",  "angle": "tutorial",  "tags": ["sql", "ai", "database", "tutorial"]},
+    {"q": "How to debug a failing test with AI",                    "angle": "tutorial",  "tags": ["testing", "ai", "debugging", "programming"]},
+    {"q": "How to write an architecture decision record with AI",   "angle": "tutorial",  "tags": ["architecture", "ai", "engineering", "career"]},
+    {"q": "How to use AI to migrate code between frameworks",       "angle": "case_study","tags": ["ai", "webdev", "programming", "tutorial"]},
+    {"q": "How to use AI to find security bugs in your code",       "angle": "tutorial",  "tags": ["security", "ai", "programming", "devops"]},
+    {"q": "How to write better error messages with AI",            "angle": "tip_list",  "tags": ["ai", "programming", "productivity", "beginners"]},
+    {"q": "How to use AI to onboard onto a new codebase fast",      "angle": "tutorial",  "tags": ["ai", "career", "programming", "productivity"]},
+    {"q": "How to generate API documentation with AI",             "angle": "tutorial",  "tags": ["api", "ai", "documentation", "webdev"]},
+    {"q": "How to write a regex from a description using AI",       "angle": "tutorial",  "tags": ["regex", "ai", "programming", "beginners"]},
+    {"q": "How to refactor a giant function with AI, step by step", "angle": "tutorial",  "tags": ["refactoring", "ai", "programming", "tutorial"]},
+    {"q": "How to use AI to write a clear incident postmortem",     "angle": "tutorial",  "tags": ["devops", "ai", "engineering", "career"]},
+    {"q": "Cursor vs GitHub Copilot vs Claude Code for daily coding","angle": "opinion",  "tags": ["ai", "tools", "productivity", "programming"]},
+    {"q": "How to prompt AI to follow your team's code style",      "angle": "tutorial",  "tags": ["ai", "programming", "productivity", "career"]},
+    {"q": "How to use AI to review a database schema",             "angle": "tutorial",  "tags": ["database", "ai", "sql", "engineering"]},
+    {"q": "How to write integration tests faster with AI",         "angle": "tutorial",  "tags": ["testing", "ai", "programming", "devops"]},
+    {"q": "How to reduce AI hallucinations when writing code",     "angle": "tip_list",  "tags": ["ai", "programming", "productivity", "beginners"]},
+    {"q": "How to use AI to estimate a software task accurately",   "angle": "case_study","tags": ["ai", "career", "productivity", "engineering"]},
+    {"q": "How to explain complex code to your team with AI",      "angle": "tutorial",  "tags": ["ai", "career", "programming", "productivity"]},
+    {"q": "How to use AI to triage and reproduce a bug report",     "angle": "tutorial",  "tags": ["debugging", "ai", "programming", "devops"]},
+    {"q": "How to convert pseudocode into working code with AI",    "angle": "tutorial",  "tags": ["ai", "programming", "beginners", "tutorial"]},
+    {"q": "How to use AI to write docstrings and code comments",    "angle": "tutorial",  "tags": ["ai", "programming", "documentation", "beginners"]},
+    {"q": "How to review your own code with AI before opening a PR","angle": "tutorial",  "tags": ["ai", "git", "productivity", "career"]},
+    {"q": "How to use AI to plan a new feature's architecture",     "angle": "tutorial",  "tags": ["architecture", "ai", "engineering", "career"]},
+    {"q": "How to use AI to prep for a technical coding interview", "angle": "tip_list",  "tags": ["career", "ai", "interview", "beginners"]},
+    {"q": "How to summarize a long technical RFC with AI",          "angle": "tutorial",  "tags": ["ai", "productivity", "engineering", "career"]},
+]
+
+def pick_topic(state):
+    """Rotate through the SEO topic pool, skipping anything used recently so the
+    blog builds a broad set of independently-ranking pages. Records the choice in
+    state['recent_topics'] (capped) at pick time. Returns None when disabled so
+    callers fall back to the legacy free-form angle path."""
+    if not SEO_TOPICS_ENABLED or not SEO_TOPICS:
+        return None
+    recent = state.get("recent_topics", [])
+    forbidden = set(recent[-12:])
+    chosen = None
+    start = len(recent) % len(SEO_TOPICS)
+    for i in range(len(SEO_TOPICS)):
+        cand = SEO_TOPICS[(start + i) % len(SEO_TOPICS)]
+        if cand["q"] not in forbidden:
+            chosen = cand
+            break
+    if chosen is None:
+        chosen = SEO_TOPICS[start]
+    recent.append(chosen["q"])
+    state["recent_topics"] = recent[-60:]
+    return chosen
+
 def _devto_published_today():
     """Query DEV.to's API to see if our account already has a post dated
     today. Resilient to state.json wipes (which happen on Render redeploys).
@@ -416,6 +484,15 @@ def generate_content(week_number, format_key, state):
 
     tags = DEVTO_TAGS_ROTATION[len(posts_made) % len(DEVTO_TAGS_ROTATION)]
 
+    # SEO topic engine: for the two cold, blog-mirrored DEV.to formats, target a
+    # concrete high-intent search query instead of a free-form opinion piece. The
+    # query drives the title (matching it is the on-page SEO win), the angle, and
+    # the tags. Other formats (weekly roundup, warm newsletter, IH) stay free-form.
+    seo_topic = pick_topic(state) if format_key in ("devto_long", "devto_medium") else None
+    if seo_topic:
+        angle = seo_topic["angle"]
+        tags = seo_topic["tags"]
+
     weekly_titles = [
         p.get("title", "") for p in posts_made
         if p.get("week") == week_number and p.get("platform") == "devto"
@@ -429,6 +506,21 @@ def generate_content(week_number, format_key, state):
         "story":      "narrative arc — situation, problem, what you tried, what worked",
     }
     angle_hint = angle_hints[angle]
+
+    # When an SEO topic is active, force the piece to target that exact search
+    # query: title matches it, the opening restates it, the body fully answers it.
+    # This is what makes the page rank and pull compounding organic traffic.
+    if seo_topic:
+        seo_block = f"""SEARCH-INTENT TARGET — this article must rank in Google for a specific query. Optimize for it:
+- Target query: "{seo_topic['q']}"
+- Title: use the target query almost verbatim as the title (you may tighten wording, but keep the core keywords and intent). This is the single most important SEO rule — do NOT replace it with a clever/opinion headline.
+- First paragraph: restate the problem in the reader's words and promise the concrete answer — no long throat-clearing intro.
+- Body: directly and completely ANSWER the query with concrete, copy-paste-able steps/prompts/code. A reader who Googled this must leave fully satisfied.
+- Use clear descriptive subheadings (## in markdown) that a search engine and a skimmer can both parse.
+- Stay evergreen and specific; avoid dated references and hype.
+"""
+    else:
+        seo_block = ""
 
     # Tracked URLs — one per format, so Gumroad analytics shows which channel
     # produced the click. utm_campaign embeds format + week.
@@ -488,8 +580,8 @@ Angle: {angle} ({angle_hint}).
 Use these DEV.to tags: {tags}
 Do NOT repeat or rephrase any of these previous titles: {previous_titles}
 
-Rules:
-- Title: specific and useful (e.g. "The 5 AI prompts I use before every code review"). No hype, no clickbait.
+{seo_block}Rules:
+- Title: specific and useful (e.g. "The 5 AI prompts I use before every code review"). No hype, no clickbait. If a search-intent target is given above, the title rule there overrides this example.
 - Body: 500-800 words markdown. Include 1-2 concrete copy-paste prompt examples in code blocks.
 - Include ONE mid-article soft mention: somewhere around the 60-70% point of the article (after introducing the main technique), add a one-line aside like "This pattern is one of the ones I've packaged into {GUMROAD_PRODUCT_NAME} — but the version below is enough to get value on its own." Then immediately keep teaching. The aside must NOT include a link.
 - End CTA: free newsletter signup. Last paragraph, 2-3 sentences, declarative. Link: {sub_long_url}
@@ -503,8 +595,8 @@ Angle: {angle} ({angle_hint}).
 Use these DEV.to tags: {tags}
 Do NOT repeat or rephrase any of these recent titles: {previous_titles}
 
-Rules:
-- Title: sharp and specific.
+{seo_block}Rules:
+- Title: sharp and specific. If a search-intent target is given above, use it as the title (its rule overrides this).
 - Body: 300-500 words markdown, one concrete prompt or workflow example.
 - End CTA: free newsletter signup. Last paragraph, 2-3 sentences, declarative. Link: {sub_medium_url}
 - Tone: peer-to-peer, no fluff. No mid-article mention (article is too short).
