@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to Write Better Git Commit Messages with AI — The AI Leverage Weekly</title>
+  <meta name="description" content="Bad commit messages are a tax you pay forever. You hit git log six months later and find a wall of &quot;fix stuff&quot;, &quot;WIP&quot;, &quot;asdf&quot;, and &quot;final final v2&quot; — and…">
+  <link rel="canonical" href="https://theaileverageweekly.com/posts/how-to-write-better-git-commit-messages-with-ai.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="How to Write Better Git Commit Messages with AI — The AI Leverage Weekly">
+  <meta property="og:description" content="Bad commit messages are a tax you pay forever. You hit git log six months later and find a wall of &quot;fix stuff&quot;, &quot;WIP&quot;, &quot;asdf&quot;, and &quot;final final v2&quot; — and…">
+  <meta property="og:url" content="https://theaileverageweekly.com/posts/how-to-write-better-git-commit-messages-with-ai.html">
+  <meta property="og:site_name" content="The AI Leverage Weekly">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to Write Better Git Commit Messages with AI — The AI Leverage Weekly">
+  <meta name="twitter:description" content="Bad commit messages are a tax you pay forever. You hit git log six months later and find a wall of &quot;fix stuff&quot;, &quot;WIP&quot;, &quot;asdf&quot;, and &quot;final final v2&quot; — and…">
+  <style>
+  :root {
+    --ink: #18181b; --muted: #6b7280; --faint: #9ca3af;
+    --accent: #4f46e5; --accent-dark: #4338ca;
+    --border: #ececf0; --bg: #ffffff; --bg-soft: #f7f7fb;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.6;
+         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  .topbar { height: 4px; background: linear-gradient(90deg, #4f46e5, #7c6cf0); }
+  .container { max-width: 720px; margin: 0 auto; padding: 0 22px; }
+  a { color: var(--accent); }
+
+  .site-header { border-bottom: 1px solid var(--border); }
+  .site-header .container { display: flex; align-items: center; justify-content: space-between;
+                            padding-top: 20px; padding-bottom: 20px; gap: 16px; }
+  .brand { text-decoration: none; color: var(--ink); }
+  .brand b { display: block; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+  .brand span { display: block; font-weight: 400; font-size: 12px; color: var(--faint); margin-top: 1px; }
+  .subscribe-btn { background: var(--accent); color: #fff; text-decoration: none; font-size: 14px;
+                   font-weight: 600; padding: 9px 16px; border-radius: 8px; white-space: nowrap; }
+  .subscribe-btn:hover { background: var(--accent-dark); }
+  .nav-actions { display: flex; align-items: center; gap: 16px; }
+  .nav-link { font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; white-space: nowrap; }
+  .nav-link:hover { color: var(--accent); }
+
+  .hero { padding: 56px 0 8px; }
+  .hero h1 { font-size: 34px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 12px; }
+  .hero p { font-size: 17px; color: var(--muted); margin: 0; max-width: 34em; }
+
+  .posts { list-style: none; padding: 0; margin: 24px 0 0; }
+  .posts li { padding: 26px 0; border-top: 1px solid var(--border); }
+  .posts a.post-link { font-size: 22px; font-weight: 650; line-height: 1.3; letter-spacing: -0.01em;
+                       color: var(--ink); text-decoration: none; }
+  .posts a.post-link:hover { color: var(--accent); }
+  .posts .date { display: block; font-size: 12px; color: var(--faint); margin-top: 8px;
+                 text-transform: uppercase; letter-spacing: 0.05em; }
+
+  article { padding: 44px 0 0; }
+  .back { font-size: 14px; color: var(--muted); text-decoration: none; }
+  .back:hover { color: var(--accent); }
+  article h1 { font-size: 36px; line-height: 1.18; letter-spacing: -0.02em; margin: 22px 0 12px; }
+  .post-meta { font-size: 12px; color: var(--faint); text-transform: uppercase;
+               letter-spacing: 0.05em; margin-bottom: 36px; }
+  .post-body { font-family: Georgia, 'Times New Roman', serif; font-size: 19px; line-height: 1.75; color: #27272a; }
+  .post-body p { margin: 0 0 22px; }
+  .post-body h2 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                  font-size: 25px; letter-spacing: -0.01em; margin: 44px 0 14px; }
+  .post-body h3 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                  font-size: 20px; margin: 32px 0 10px; }
+  .post-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .post-body ul, .post-body ol { padding-left: 24px; margin: 0 0 22px; }
+  .post-body li { margin: 6px 0; }
+  .post-body blockquote { margin: 24px 0; padding: 4px 20px; border-left: 3px solid var(--accent);
+                          color: var(--muted); font-style: italic; }
+  .post-body pre { background: #f6f8fa; border: 1px solid var(--border); border-radius: 8px;
+                   padding: 16px 18px; overflow-x: auto; font-size: 14.5px; line-height: 1.6;
+                   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .post-body code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                    font-size: 0.86em; background: #f1f1f5; padding: 2px 6px; border-radius: 4px; }
+  .post-body pre code { background: none; padding: 0; font-size: inherit; }
+  .post-body img { max-width: 100%; height: auto; border-radius: 8px; }
+
+  .cta { margin: 56px 0 0; padding: 28px; background: var(--bg-soft);
+         border: 1px solid var(--border); border-radius: 12px; text-align: center; }
+  .cta h3 { margin: 0 0 6px; font-size: 19px; }
+  .cta p { margin: 0 0 18px; color: var(--muted); font-size: 15px; }
+
+  .read-next { margin: 48px 0 0; padding-top: 28px; border-top: 1px solid var(--border); }
+  .read-next h3 { margin: 0 0 14px; font-size: 13px; text-transform: uppercase;
+                  letter-spacing: 0.06em; color: var(--faint); }
+  .read-next ul { list-style: none; padding: 0; margin: 0; }
+  .read-next li { padding: 8px 0; }
+  .read-next a { font-size: 17px; font-weight: 600; color: var(--ink); text-decoration: none; }
+  .read-next a:hover { color: var(--accent); }
+
+  .site-footer { margin-top: 64px; border-top: 1px solid var(--border); }
+  .site-footer .container { padding: 26px 22px; font-size: 13px; color: var(--faint);
+                            display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
+  .site-footer a { color: var(--muted); text-decoration: none; }
+  .site-footer a:hover { color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .hero { padding-top: 40px; }
+    .hero h1 { font-size: 28px; }
+    article h1 { font-size: 28px; }
+    .post-body { font-size: 18px; }
+    .posts a.post-link { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar"></div>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="/"><b>The AI Leverage Weekly</b><span>Practical AI workflows for engineers</span></a>
+      <span class="nav-actions"><a class="nav-link" href="/free-prompts.html">Free prompts</a><a class="subscribe-btn" href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a></span>
+    </div>
+  </header>
+  <div class="container">
+    <article>
+      <a class="back" href="/">&larr; All posts</a>
+      <h1>How to Write Better Git Commit Messages with AI</h1>
+      <div class="post-meta">2026-06-15</div>
+      <div class="post-body"><p>Bad commit messages are a tax you pay forever. You hit <code>git log</code> six months later and find a wall of "fix stuff", "WIP", "asdf", and "final final v2" — and now you're archaeologist instead of engineer. The good news: AI can eliminate this problem almost entirely, and in this walkthrough I'll show you exactly how to wire it into your workflow with copy-paste prompts you can use today.</p>
+
+<h2>
+  <a name="why-commit-messages-fail-and-why-ai-actually-helps-here" href="#why-commit-messages-fail-and-why-ai-actually-helps-here">
+  </a>
+  Why Commit Messages Fail (And Why AI Actually Helps Here)
+</h2>
+
+<p>The root cause isn't laziness — it's timing. You write the commit message right after a long coding session, when your brain is fried and you just want to push. Context is all in your head, not on the screen.</p>
+
+<p>AI flips this. You feed it the diff and your rough notes; it drafts a structured message. You edit for accuracy. Total time: 30 seconds. The output is consistently better than what most engineers write under pressure.</p>
+
+<h2>
+  <a name="step-1-stage-your-changes-and-generate-a-diff" href="#step-1-stage-your-changes-and-generate-a-diff">
+  </a>
+  Step 1: Stage Your Changes and Generate a Diff
+</h2>
+
+<p>Before prompting, get a clean diff of what you're about to commit:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight shell"><code>git diff <span class="nt">--staged</span>
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>Copy the output. If the diff is large (500+ lines), narrow it to the most meaningful files:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight shell"><code>git diff <span class="nt">--staged</span> <span class="nt">--</span> path/to/relevant/file.ts
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>You don't need to paste every line into the prompt — a representative slice plus a plain-English summary of your intent is enough.</p>
+
+<h2>
+  <a name="step-2-use-this-base-prompt" href="#step-2-use-this-base-prompt">
+  </a>
+  Step 2: Use This Base Prompt
+</h2>
+
+<p>Paste this into your AI assistant of choice (ChatGPT, Claude, Copilot Chat, etc.):<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>You are a senior engineer helping me write a Git commit message.
+
+Here is the staged diff:
+&lt;paste diff here&gt;
+
+My intent: &lt;one sentence about what this change accomplishes and why&gt;
+
+Write a commit message using the Conventional Commits format:
+- First line: type(scope): short imperative summary (max 72 chars)
+- Blank line
+- Body: 2–4 bullet points explaining WHAT changed and WHY, not HOW
+- If there's a breaking change, add a BREAKING CHANGE footer
+
+Output only the commit message, no commentary.
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>A real example output for a token-refresh bug fix might look like this:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>fix(auth): prevent silent token refresh on expired session
+
+- Remove automatic refresh call when session TTL has already elapsed
+- Add explicit expiry check before calling refreshToken()
+- Prevents a race condition that caused duplicate refresh requests
+  under slow network conditions
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>That's immediately useful to the next engineer reading <code>git log</code>.</p>
+
+<h2>
+  <a name="step-3-refine-with-a-oneline-followup" href="#step-3-refine-with-a-oneline-followup">
+  </a>
+  Step 3: Refine With a One-Line Follow-Up
+</h2>
+
+<p>If the first draft is close but not quite right, don't re-explain from scratch. Just correct the specific problem:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>The scope should be "session" not "auth", and the first line
+is too long — tighten it to under 60 characters.
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>AI handles surgical edits like this well. You're the reviewer; it's the first-draft writer.</p>
+
+<h2>
+  <a name="step-4-build-a-shell-alias-for-speed" href="#step-4-build-a-shell-alias-for-speed">
+  </a>
+  Step 4: Build a Shell Alias for Speed
+</h2>
+
+<p>The friction of copy-pasting manually will kill this habit. Automate it. Add this to your <code>.zshrc</code> or <code>.bashrc</code>:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight shell"><code><span class="nb">alias </span><span class="nv">gcm</span><span class="o">=</span><span class="s1">'git diff --staged | pbcopy &amp;&amp; echo "Diff copied. Paste into your AI prompt."'</span>
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>On Linux, swap <code>pbcopy</code> for <code>xclip -selection clipboard</code>. Now your staged diff is on your clipboard in one command, ready to paste into any AI chat.</p>
+
+<p>For teams using the GitHub CLI, you can go further and pipe directly into a script that calls an API — but the manual copy-paste habit alone will get you 80% of the value.</p>
+
+<h2>
+  <a name="step-5-add-a-linter-to-enforce-the-format" href="#step-5-add-a-linter-to-enforce-the-format">
+  </a>
+  Step 5: Add a Linter to Enforce the Format
+</h2>
+
+<p>Writing good messages is only half the battle — the other half is making sure they don't regress. Add <code>commitlint</code> to your repo:<br>
+</p>
+
+<div class="highlight js-code-highlight">
+<pre class="highlight shell"><code>npm <span class="nb">install</span> <span class="nt">--save-dev</span> @commitlint/cli @commitlint/config-conventional
+<span class="nb">echo</span> <span class="s2">"module.exports = { extends: ['@commitlint/config-conventional'] };"</span> <span class="o">&gt;</span> commitlint.config.js
+npx husky add .husky/commit-msg <span class="s1">'npx --no -- commitlint --edit "$1"'</span>
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>Now any commit that doesn't follow Conventional Commits format gets rejected before it ever touches your branch. Pair this with the AI prompt above and the format issues go away almost entirely.</p>
+
+
+<hr>
+
+<p>This prompt pattern is one of the ones I've packaged into The AI Leverage Playbook: 50 Prompts &amp; Workflows for Engineers — but the version above is enough to get real value on its own.</p>
+
+
+<hr>
+
+<h2>
+  <a name="what-good-looks-like-at-scale" href="#what-good-looks-like-at-scale">
+  </a>
+  What Good Looks Like at Scale
+</h2>
+
+<p>Once this habit is set, your <code>git log</code> becomes actual documentation. You can:</p>
+
+<ul>
+<li>Run <code>git log --oneline</code> to get a readable changelog for a release</li>
+<li>Use <code>git log --grep="fix(auth)"</code> to find every auth-related fix without grepping source</li>
+<li>Onboard new engineers by pointing them at commit history, not Confluence</li>
+</ul>
+
+<p>The commit message becomes a first-class artifact, not an afterthought.</p>
+
+<h2>
+  <a name="quick-reference-the-prompt-one-more-time" href="#quick-reference-the-prompt-one-more-time">
+  </a>
+  Quick Reference: The Prompt, One More Time
+</h2>
+
+
+
+<div class="highlight js-code-highlight">
+<pre class="highlight plaintext"><code>You are a senior engineer helping me write a Git commit message.
+
+Diff:
+&lt;paste&gt;
+
+Intent: &lt;one sentence&gt;
+
+Format: Conventional Commits. First line ≤72 chars, imperative mood.
+Body: 2–4 bullets on what changed and why. BREAKING CHANGE footer if needed.
+Output the commit message only.
+</code></pre>
+<div class="highlight__panel js-actions-panel">
+<div class="highlight__panel-action js-fullscreen-code-action">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-on"><title>Enter fullscreen mode</title>
+    <path d="M16 3h6v6h-2V5h-4V3zM2 3h6v2H4v4H2V3zm18 16v-4h2v6h-6v-2h4zM4 19h4v2H2v-6h2v4z"></path>
+</svg>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewbox="0 0 24 24" class="highlight-action crayons-icon highlight-action--fullscreen-off"><title>Exit fullscreen mode</title>
+    <path d="M18 7h4v2h-6V3h2v4zM8 9H2V7h4V3h2v6zm10 8v4h-2v-6h6v2h-4zM8 15v6H6v-4H2v-2h6z"></path>
+</svg>
+
+</div>
+</div>
+</div>
+
+
+
+<p>Save that. Reach for it every time you're about to type "fix stuff."</p>
+
+
+<hr>
+
+<p>I break down one workflow like this every week in The AI Leverage Weekly — practical, no fluff, free. Subscribe: <a href="https://theaileverageweekly.beehiiv.com/subscribe?utm_source=devto&amp;utm_medium=article&amp;utm_campaign=long_w6" target="_blank" rel="noopener noreferrer">https://theaileverageweekly.beehiiv.com/subscribe?utm_source=devto&amp;utm_medium=article&amp;utm_campaign=long_w6</a></p>
+
+</div>
+      <div class="cta">
+      <h3>Get the next one in your inbox</h3>
+      <p>Practical AI workflows for engineers. One issue a week, no fluff.</p>
+      <a class="subscribe-btn" href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe free</a>
+    </div>
+      <nav class="read-next" aria-label="More posts">
+      <h3>Read next</h3>
+      <ul>
+      <li><a href="/posts/we-cut-onboarding-time-by-40-using-ai-here-s-exactly-what-we-did-week.html">We Cut Onboarding Time by 40% Using AI — Here&#x27;s Exactly What We Did (Week 5 Roundup)</a></li>
+      <li><a href="/posts/junior-devs-who-use-ai-are-not-cheating-they-re-training-smarter.html">Junior Devs Who Use AI Are Not Cheating — They&#x27;re Training Smarter</a></li>
+      <li><a href="/posts/10-prompts-i-reach-for-every-week-to-stay-unblocked-as-an-engineer.html">10 Prompts I Reach for Every Week to Stay Unblocked as an Engineer</a></li>
+      </ul>
+    </nav>
+    </article>
+  </div>
+  <footer class="site-footer">
+    <div class="container">
+      <span>&copy; 2026 The AI Leverage Weekly</span>
+      <span><a href="/">All posts</a> &middot; <a href="/free-prompts.html">Free prompts</a> &middot; <a href="https://theaileverageweekly.beehiiv.com/subscribe">Subscribe</a></span>
+    </div>
+  </footer>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BlogPosting", "headline": "How to Write Better Git Commit Messages with AI", "description": "Bad commit messages are a tax you pay forever. You hit git log six months later and find a wall of \"fix stuff\", \"WIP\", \"asdf\", and \"final final v2\" — and…", "datePublished": "2026-06-15", "url": "https://theaileverageweekly.com/posts/how-to-write-better-git-commit-messages-with-ai.html", "mainEntityOfPage": "https://theaileverageweekly.com/posts/how-to-write-better-git-commit-messages-with-ai.html", "author": {"@type": "Organization", "name": "The AI Leverage Weekly"}, "publisher": {"@type": "Organization", "name": "The AI Leverage Weekly"}}</script>
+</body>
+</html>
